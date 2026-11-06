@@ -43,6 +43,15 @@ button{cursor:pointer}
 header{padding:20px 0 12px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
 h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.04em;text-transform:uppercase;margin:0;line-height:1}
 .sub{color:var(--mute);margin:4px 0 0;font-size:13px}
+.al{flex:1 1 100%;display:flex;gap:20px;align-items:center;position:relative;overflow:hidden;padding:16px 20px;border:1px solid var(--line);border-radius:var(--r,12px);background:linear-gradient(160deg,var(--panel2),var(--panel));box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 8px 24px rgba(0,0,0,.25)}
+.al:empty{display:none}
+.al::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent)}
+.al .al-n{display:flex;align-items:baseline;gap:8px;flex:none}
+.al .al-n b{font-family:var(--display);font-size:64px;line-height:.9;color:var(--accent);letter-spacing:.01em}
+.al .al-n span{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.al .al-t strong{display:block;font-size:17px;margin-bottom:4px}
+.al .al-t span{display:block;color:var(--mute);font-size:13.5px;line-height:1.5;max-width:92ch}
+.al a{color:var(--accent)}
 .fresh{display:block;flex:1 1 100%;width:100%}
 .fr-top{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:12px}
 .fr-lbl{font-size:13px;color:var(--mute)}
@@ -57,6 +66,7 @@ h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.04e
 .fr .tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-top:8px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
 .fr.warn{border-color:var(--warn)}.fr.warn .tag{color:var(--warn);border-color:var(--warn)}
 .fr.crit{border-color:var(--crit)}.fr.crit .tag{color:var(--crit);border-color:var(--crit)}
+@media (max-width:640px){.al{flex-direction:column;align-items:flex-start;gap:8px;padding:14px}.al .al-n b{font-size:48px}}
 @media (max-width:980px){.frg{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:640px){.frg{grid-template-columns:repeat(2,minmax(0,1fr))}.fr{padding:14px;gap:10px}.fr .lgbox{height:92px}.fr b{font-size:28px}}
 .chip{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel);display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
@@ -260,6 +270,7 @@ footer{color:#a9b7c8;font-size:13px}
       <p class="sub" id="subline"></p>
       <p class="disc">Unofficial fan project · not affiliated with or endorsed by Riot Games · powered by <a href="https://claude.ai" rel="noopener">claude.ai</a> · data refreshed daily · <a href="#foot" data-go="foot">details</a></p>
     </div>
+    <div class="al" id="aligned" aria-label="Aligned contract end date"></div>
     <div class="fresh" id="fresh" aria-label="Last update per region sheet"></div>
   </header>
   <section class="sec" id="radar"><div class="sechead"><h2 class="st">Expiry radar</h2><p class="ss">Every listed contract by end date. Filter by region, league and role, then open any player or team.</p></div><div id="sec-radar"></div></section>
@@ -282,6 +293,15 @@ footer{color:#a9b7c8;font-size:13px}
 (function(){
 'use strict';
 var MS=864e5, NOW=Date.now(), NOWY=new Date(NOW).getUTCFullYear();
+// Riot's aligned contract end dates (Monday before the third Tuesday of November, 23:59 UTC), as summarised by Sheep Esports. Several sheets list the day after instead, so both count as on-calendar.
+var ALIGNED=['2026-11-16','2027-11-15','2028-11-20','2029-11-19','2030-11-18'];
+var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function dayAfter(iso){return new Date(Date.parse(iso+'T00:00:00Z')+MS).toISOString().slice(0,10)}
+function dowOf(iso){return DOW[new Date(iso+'T00:00:00Z').getUTCDay()]}
+var ALSET={};ALIGNED.forEach(function(d){ALSET[d]=1;ALSET[dayAfter(d)]=1});
+function alignedEnd(d){return Date.parse(d+'T23:59:00Z')}
+function alignedNext(){for(var i=0;i<ALIGNED.length;i++){if(alignedEnd(ALIGNED[i])>=NOW)return ALIGNED[i]}return null}
+function alignedPrev(){var p=null;ALIGNED.forEach(function(d){if(alignedEnd(d)<NOW)p=d});return p}
 var REGS=['AME','CN','EMEA','KR','LCP'];
 var RC={AME:'#6aa7ff',CN:'#ff7a7a',EMEA:'#f5c451',KR:'#b18cff',LCP:'#4fd1a5'};
 var RL=window.GCD_REGLOGOS||{},RLH=window.GCD_REGLOGOS_HI||{};
@@ -360,6 +380,16 @@ var S={view:'radar',region:'ALL',league:'ALL',role:'ALL',q:'',staff:false,showEn
 
 // ---------- header ----------
 function renderHeader(){
+  (function(){
+    var el=$('aligned'),nx=alignedNext(),pv=alignedPrev(),src=' <a href="https://www.sheepesports.com/en/articles/league-of-legends-the-global-contract-database/en" rel="noopener">Source: Sheep Esports’ summary of Riot’s policies</a>.';
+    if(pv&&NOW-alignedEnd(pv)<21*MS){
+      var fa=dayAfter(pv),d=Math.max(0,Math.floor((NOW-Date.parse(fa+'T00:00:00Z'))/MS));
+      el.innerHTML='<div class="al-n"><b>FA</b><span>open</span></div><div class="al-t"><strong>Free agency opened '+dowOf(fa)+' '+fmtDate(fa)+', 00:00 UTC ('+(d<1?'today':d+' day'+(d===1?'':'s')+' ago')+')</strong><span>Contracts ended '+dowOf(pv)+' '+fmtDate(pv)+', 23:59 UTC. Expect many renewals and signings to reach the sheet over the next days, so listings that look ended may simply not be updated yet.'+src+'</span></div>';
+    }else if(nx){
+      var td=new Date(NOW).toISOString().slice(0,10),days=Math.round((Date.parse(nx+'T00:00:00Z')-Date.parse(td+'T00:00:00Z'))/MS),fa2=dayAfter(nx);
+      el.innerHTML='<div class="al-n"><b>'+(days<1?'Today':days)+'</b><span>'+(days<1?'':days===1?'day':'days')+'</span></div><div class="al-t"><strong>Aligned contract end date: '+dowOf(nx)+' '+fmtDate(nx)+', 23:59 UTC</strong><span>Pro contracts end on this date, or earlier if they are short deals. Player free agency opens '+dowOf(fa2)+' '+fmtDate(fa2)+', 00:00 UTC; coaches the day after the Worlds final. Until then new signings are locked apart from extensions, rookies and short-term deals.'+src+'</span></div>';
+    }
+  })();
   $('subline').textContent='Snapshot of Riot’s League-Recognized Contract Database, pulled '+fmtDate(META.asOf)+'. '+R.length+' listings across '+T.length+' teams.';
   var ra=ageDays(META.asOf),rcls=ra>=3?'crit':ra>=2?'warn':'';
   var RNAME={AME:'Americas',CN:'China',EMEA:'EMEA',KR:'Korea',LCP:'Asia-Pacific'};
@@ -368,7 +398,7 @@ function renderHeader(){
     var tag=a>60?'Stale':a>30?'Aging':'Current';
     return '<div class="fr '+cls+'" style="--c:'+RC[g]+'" title="Sheet last updated '+fmtDate(META.updated[g])+'"><span class="lgbox">'+(RLH[g]||RL[g]?'<img class="'+(g==='EMEA'||g==='KR'?'mono':'')+'" alt="'+g+' league logo" src="data:image/webp;base64,'+(RLH[g]||RL[g])+'">':'')+'</span><span><b>'+g+'</b><span class="ago">'+(a<1?'Today':a===1?'Yesterday':a+' days ago')+'</span><span class="tag">'+tag+'</span></span></div>';
   }).join('')+'</div>';
-  $('foot').textContent='Unofficial fan project: not affiliated with or endorsed by Riot Games. Powered by claude.ai (Claude, an AI assistant made by Anthropic): the code and data processing were written by AI, so check anything important against Riot’s sheet. Data comes from Riot’s League-Recognized Contract Database, refreshed once a day, and each region sheet is updated on its own schedule, so the age chips above matter. A contract end date is not a free-agency status: renewals and extensions may not be listed yet. KR roles come from Leaguepedia, which also supplies the team logos (trademarks of their owners). Legal names are left out on purpose.';
+  $('foot').textContent='Unofficial fan project: not affiliated with or endorsed by Riot Games. Powered by claude.ai (Claude, an AI assistant made by Anthropic): the code and data processing were written by AI, so check anything important against Riot’s sheet. Data comes from Riot’s League-Recognized Contract Database, refreshed once a day, and each region sheet is updated on its own schedule, so the age chips above matter. Under Riot’s rules a player is free to sign anywhere once their contract end date passes, so the bigger risk is the opposite one: extensions can be signed at any time and may not be on the sheet yet. KR roles come from Leaguepedia, which also supplies the team logos (trademarks of their owners). Legal names are left out on purpose.';
 }
 
 // ---------- shared filters ----------
@@ -502,7 +532,7 @@ function updateRadar(){
 }
 
 // ---------- MARKET BOARD ----------
-var CUTS=[['2026-11-17','By 17 Nov 2026 (the Nov 16-17 wave)'],['2026-11-30','By 30 Nov 2026'],['2026-12-31','By 31 Dec 2026'],['2027-12-31','By 31 Dec 2027'],['2099-12-31','Any listed end date']];
+var CUTS=[['2026-11-17','By 17 Nov 2026 (aligned end date, Mon 16 Nov)'],['2026-11-30','By 30 Nov 2026'],['2026-12-31','By 31 Dec 2026'],['2027-12-31','By 31 Dec 2027'],['2099-12-31','Any listed end date']];
 var COLS=[['TOP','Top'],['JUNGLE','Jungle'],['MID','Mid'],['BOT','Bot'],['SUPPORT','Support'],['SUB','Sub'],['','No role listed']];
 function marketRows(){
   var m=S.m,cut=Date.parse(m.cut+'T23:59:00Z');
@@ -615,6 +645,11 @@ function buildFindings(){
       exp.sort(function(a,b){return a.ms-b.ms});
       add(oldest>30?'med':'low','expired','Contract end date already passed',t,exp.length+' listing'+(exp.length===1?'':'s')+', oldest ended '+oldest+' days ago: '+exp.slice(0,4).map(function(r){return r.name+' ('+fmtShort(r.end)+')'}).join(', ')+(exp.length>4?' and '+(exp.length-4)+' more':'')+'.');
     }
+    // end dates off Riot's aligned calendar
+    var AN=alignedNext();
+    if(AN){var offc=players.filter(function(r){return r.ms!=null&&r.end>dayAfter(AN)&&!ALSET[r.end]});
+      if(offc.length){offc.sort(function(a,b){return a.ms-b.ms});
+        add('low','off-cal','End date off the aligned calendar',t,'Contracts should end on an aligned date ('+fmtShort(AN)+' next) or be short deals ending before it. Check: '+offc.slice(0,5).map(function(r){return r.name+' ('+fmtShort(r.end)+')'}).join(', ')+(offc.length>5?' and '+(offc.length-5)+' more':'')+'. May be a typo, or a league with its own rules.')}}
     // gaps vs league norm
     if(L0.end){var ne=players.filter(function(r){return !r.end});if(ne.length)add('low','no-end','Player missing an end date',t,ne.map(function(r){return r.name}).slice(0,5).join(', ')+(ne.length>5?' and '+(ne.length-5)+' more':'')+'.')}
     if(L0.res){var nr=players.filter(function(r){return !r.res});if(nr.length)add('low','no-res','Player missing residency',t,nr.map(function(r){return r.name}).slice(0,5).join(', ')+(nr.length>5?' and '+(nr.length-5)+' more':'')+'.')}
