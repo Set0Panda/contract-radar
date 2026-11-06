@@ -6,7 +6,7 @@ Who is out of contract, when, and where the market is thin. A static site built 
 
 - **Expiry radar** - current players by contract end date. Ended and undated listings are hidden by default and can be switched on. Filter by region, league, role and search; click any column header to sort, click again to reverse.
 - **Aligned end date countdown** - days until Riot's yearly aligned contract end date (2026: Mon 16 Nov, 23:59 UTC) and when free agency opens. After it passes, the banner switches to "Free agency opened".
-- **Region freshness** - how old each region's source sheet is, with a Current / Aging / Stale tag. An old sheet means old dates.
+- **Region freshness** - how old each region's source sheet is, with a Current / Aging / Stale tag. An old sheet means old dates. Click a region to filter the radar to it (click again to clear).
 - **Market board** - who is exposed in a chosen window, by role.
 - **What changed** - additions, removals, moved end dates and role changes between daily snapshots. Tracking started 6 Nov 2026, so it fills in as the sheet changes.
 - **Data health** - problems in the source sheets, so you know what not to trust: stale sheets, duplicates, missing roles, ended dates still listed, and end dates that fall off Riot's aligned calendar.

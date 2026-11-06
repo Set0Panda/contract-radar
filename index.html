@@ -43,32 +43,36 @@ button{cursor:pointer}
 header{padding:20px 0 12px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
 h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.04em;text-transform:uppercase;margin:0;line-height:1}
 .sub{color:var(--mute);margin:4px 0 0;font-size:13px}
-.al{flex:1 1 100%;display:flex;gap:20px;align-items:center;position:relative;overflow:hidden;padding:16px 20px;border:1px solid var(--line);border-radius:var(--r,12px);background:linear-gradient(160deg,var(--panel2),var(--panel));box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 8px 24px rgba(0,0,0,.25)}
+.al{flex:1 1 100%;display:flex;gap:16px;align-items:center;position:relative;overflow:hidden;padding:12px 16px;border:1px solid var(--line);border-radius:var(--r,12px);background:linear-gradient(160deg,var(--panel2),var(--panel));box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 8px 24px rgba(0,0,0,.25)}
 .al:empty{display:none}
 .al::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--accent),transparent)}
 .al .al-n{display:flex;align-items:baseline;gap:8px;flex:none}
-.al .al-n b{font-family:var(--display);font-size:64px;line-height:.9;color:var(--accent);letter-spacing:.01em}
+.al .al-n b{font-family:var(--display);font-size:48px;line-height:.9;color:var(--accent);letter-spacing:.01em}
 .al .al-n span{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
-.al .al-t strong{display:block;font-size:17px;margin-bottom:4px}
-.al .al-t span{display:block;color:var(--mute);font-size:13.5px;line-height:1.5;max-width:92ch}
+.al .al-t strong{display:block;font-size:15.5px;margin-bottom:2px}
+.al .al-t span{display:block;color:var(--mute);font-size:12.5px;line-height:1.45;max-width:100ch}
 .al a{color:var(--accent)}
 .fresh{display:block;flex:1 1 100%;width:100%}
 .fr-top{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:12px}
 .fr-lbl{font-size:13px;color:var(--mute)}
 .frg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-.fr{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:18px;border:1px solid var(--line);border-radius:var(--r,12px);background:linear-gradient(160deg,var(--panel2),var(--panel));box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 8px 24px rgba(0,0,0,.25)}
-.fr::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--c,var(--accent)),transparent)}
-.fr .lgbox{display:flex;align-items:center;justify-content:flex-start;width:100%;height:132px}
-.fr .lgbox img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;object-position:left center}
+.fr{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(160deg,var(--panel2),var(--panel));color:inherit;font:inherit;text-align:left;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
+.fr::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,var(--c,var(--accent)),transparent)}
+.fr:hover{transform:translateY(-2px);border-color:var(--c,var(--accent))}
+.fr.on{border-color:var(--c,var(--accent));box-shadow:0 0 0 1px var(--c,var(--accent)),0 8px 24px rgba(0,0,0,.3);background:linear-gradient(160deg,#1c2a3a,var(--panel))}
+.fr .lgbox{flex:none;display:flex;align-items:center;justify-content:center;width:84px;height:42px}
+.fr .lgbox img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
 .fr .lgbox img.mono{filter:brightness(0) invert(1)}
-.fr b{display:block;font-family:var(--display);font-size:34px;letter-spacing:.04em;line-height:1}
-.fr .ago{display:block;font-size:15px;margin-top:4px}
-.fr .tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-top:8px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
+.fr .meta{min-width:0}
+.fr b{display:block;font-family:var(--display);font-size:20px;letter-spacing:.04em;line-height:1.05}
+.fr .ago{display:block;font-size:12.5px;margin-top:1px;color:var(--ink)}
+.fr .tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-top:4px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
 .fr.warn{border-color:var(--warn)}.fr.warn .tag{color:var(--warn);border-color:var(--warn)}
 .fr.crit{border-color:var(--crit)}.fr.crit .tag{color:var(--crit);border-color:var(--crit)}
+.fr.on.warn{border-color:var(--warn)}.fr.on.crit{border-color:var(--crit)}
 @media (max-width:640px){.al{flex-direction:column;align-items:flex-start;gap:8px;padding:14px}.al .al-n b{font-size:48px}}
 @media (max-width:980px){.frg{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:640px){.frg{grid-template-columns:repeat(2,minmax(0,1fr))}.fr{padding:14px;gap:10px}.fr .lgbox{height:92px}.fr b{font-size:28px}}
+@media (max-width:640px){.frg{grid-template-columns:repeat(2,minmax(0,1fr))}.fr{padding:9px 10px;gap:8px}.fr .lgbox{width:60px;height:34px}.fr b{font-size:18px}}
 .chip{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel);display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 .chip.warn{border-color:var(--warn);color:var(--warn)}
@@ -393,10 +397,10 @@ function renderHeader(){
   $('subline').textContent='Snapshot of Riot’s League-Recognized Contract Database, pulled '+fmtDate(META.asOf)+'. '+R.length+' listings across '+T.length+' teams.';
   var ra=ageDays(META.asOf),rcls=ra>=3?'crit':ra>=2?'warn':'';
   var RNAME={AME:'Americas',CN:'China',EMEA:'EMEA',KR:'Korea',LCP:'Asia-Pacific'};
-  $('fresh').innerHTML='<div class="fr-top"><span class="chip '+rcls+'" title="When this page\'s data was last rebuilt from Riot\'s sheet">'+(ra>=2?'Refresh may have stalled · last ':'Site refreshed ')+fmtDate(META.asOf)+'</span><span class="fr-lbl">When Riot last updated each region’s sheet. An old sheet means old dates.</span></div><div class="frg">'+REGS.map(function(g){
+  $('fresh').innerHTML='<div class="fr-top"><span class="chip '+rcls+'" title="When this page\'s data was last rebuilt from Riot\'s sheet">'+(ra>=2?'Refresh may have stalled · last ':'Site refreshed ')+fmtDate(META.asOf)+'</span><span class="fr-lbl">When Riot last updated each region’s sheet. Click a region to filter the radar below.</span></div><div class="frg">'+REGS.map(function(g){
     var a=ageDays(META.updated[g]);var cls=a>60?'crit':a>30?'warn':'';
     var tag=a>60?'Stale':a>30?'Aging':'Current';
-    return '<div class="fr '+cls+'" style="--c:'+RC[g]+'" title="Sheet last updated '+fmtDate(META.updated[g])+'"><span class="lgbox">'+(RLH[g]||RL[g]?'<img class="'+(g==='EMEA'||g==='KR'?'mono':'')+'" alt="'+g+' league logo" src="data:image/webp;base64,'+(RLH[g]||RL[g])+'">':'')+'</span><span><b>'+g+'</b><span class="ago">'+(a<1?'Today':a===1?'Yesterday':a+' days ago')+'</span><span class="tag">'+tag+'</span></span></div>';
+    return '<button type="button" class="fr '+cls+'" data-region="'+g+'" aria-pressed="false" style="--c:'+RC[g]+'" title="Show only '+g+' in the radar. Sheet last updated '+fmtDate(META.updated[g])+'"><span class="lgbox">'+((RLH[g]||RL[g])?'<img class="'+(g==='EMEA'||g==='KR'?'mono':'')+'" alt="'+g+' league logo" src="data:image/webp;base64,'+(RLH[g]||RL[g])+'">':'')+'</span><span class="meta"><b>'+g+'</b><span class="ago">'+(a<1?'Today':a===1?'Yesterday':a+' days ago')+'</span><span class="tag">'+tag+'</span></span></button>';
   }).join('')+'</div>';
   $('foot').textContent='Unofficial fan project: not affiliated with or endorsed by Riot Games. Powered by claude.ai (Claude, an AI assistant made by Anthropic): the code and data processing were written by AI, so check anything important against Riot’s sheet. Data comes from Riot’s League-Recognized Contract Database, refreshed once a day, and each region sheet is updated on its own schedule, so the age chips above matter. Under Riot’s rules a player is free to sign anywhere once their contract end date passes, so the bigger risk is the opposite one: extensions can be signed at any time and may not be on the sheet yet. KR roles come from Leaguepedia, which also supplies the team logos (trademarks of their owners). Legal names are left out on purpose.';
 }
@@ -494,7 +498,11 @@ function mountRadar(){
   updateRadar();
 }
 function fillLeague(){$('f-league').innerHTML=optList(leagues(S.region),S.league,'All leagues')}
+function markRegionCards(){
+  Array.prototype.forEach.call(document.querySelectorAll('.fr[data-region]'),function(el){var on=el.getAttribute('data-region')===S.region;el.classList.toggle('on',on);el.setAttribute('aria-pressed',on?'true':'false')});
+}
 function updateRadar(){
+  markRegionCards();
   // KPIs: players in current region/league/role/search scope
   var scope=radarBase(true,true).filter(function(r){return r.player});
   var all=radarBase(true,true,true).filter(function(r){return r.player});
@@ -813,12 +821,13 @@ var spy=function(){var y=window.scrollY+120,cur='';VIEWS.forEach(function(x){if(
   document.querySelectorAll('#top .links a').forEach(function(l){l.classList.toggle('on',l.getAttribute('data-go')===cur)})};
 window.addEventListener('scroll',spy,{passive:true});
 document.addEventListener('click',function(e){
-  var el=e.target.closest('[data-go],[data-bucket],[data-clear],[data-more],[data-player],[data-team],[data-close],[data-copy],[data-expand],[data-sev],[data-hmore],[data-sort]');
+  var el=e.target.closest('[data-go],[data-bucket],[data-clear],[data-more],[data-player],[data-team],[data-close],[data-copy],[data-expand],[data-sev],[data-hmore],[data-sort],[data-region]');
   if(!el)return;
   if(el.hasAttribute('data-go')){e.preventDefault();return setView(el.getAttribute('data-go'))}
   if(el.hasAttribute('data-bucket')){var b=el.getAttribute('data-bucket');S.bucket=S.bucket===b?null:b;S.page=1;return updateRadar()}
   if(el.hasAttribute('data-clear')){S.bucket=null;return updateRadar()}
   if(el.hasAttribute('data-more')){S.page++;return updateRadar()}
+  if(el.hasAttribute('data-region')){var g=el.getAttribute('data-region');S.region=S.region===g?'ALL':g;S.league='ALL';S.bucket=null;S.page=1;var fr=$('f-region');if(fr){fr.value=S.region;fillLeague()}updateRadar();return setView('radar')}
   if(el.hasAttribute('data-sort')){var k=el.getAttribute('data-sort');if(S.sort===k)S.dir=-S.dir;else{S.sort=k;S.dir=1}S.page=1;return updateRadar()}
   if(el.hasAttribute('data-hmore')){S.h.page++;return updateHealth()}
   if(el.hasAttribute('data-expand')){S.m.expand[el.getAttribute('data-expand')]=1;return updateMarket()}
