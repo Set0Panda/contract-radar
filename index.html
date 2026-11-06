@@ -4,6 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Contract Radar</title>
+<meta name="description" content="Who is out of contract, when, and where the market is thin. League of Legends esports contracts from Riot's League-Recognized Contract Database, refreshed daily. Unofficial fan project.">
+<meta name="theme-color" content="#0a0e13">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Contract Radar - League of Legends esports contract expiries">
+<meta property="og:description" content="Who is out of contract, when, and where the market is thin. Refreshed daily from Riot's contract database.">
+<meta property="og:url" content="https://set0panda.github.io/contract-radar/">
+<meta property="og:image" content="https://set0panda.github.io/contract-radar/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Contract Radar - League of Legends esports contract expiries">
+<meta name="twitter:description" content="Who is out of contract, when, and where the market is thin. Refreshed daily.">
+<meta name="twitter:image" content="https://set0panda.github.io/contract-radar/assets/og.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0e13'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%235ad1e6' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='5' fill='none' stroke='%235ad1e6' stroke-width='2'/%3E%3Ccircle cx='22' cy='10' r='2.5' fill='%23f5b841'/%3E%3C/svg%3E">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -236,7 +251,10 @@ footer{color:#a9b7c8;font-size:13px}
 <script src="roles-kr.js"></script>
 <script src="regions.js"></script>
 <script src="history.js"></script>
+<script src="site-config.js"></script>
 <script>
+/* optional privacy-friendly counter (GoatCounter): set goatcounter in site-config.js */
+(function(){var c=(window.GCD_CONFIG||{}).goatcounter;if(!c)return;var e=document.createElement('script');e.async=true;e.src='https://gc.zgo.at/count.js';e.setAttribute('data-goatcounter','https://'+c+'.goatcounter.com/count');document.head.appendChild(e)})();
 (function(){
 'use strict';
 var MS=864e5, NOW=Date.now(), NOWY=new Date(NOW).getUTCFullYear();
@@ -319,7 +337,8 @@ var S={view:'radar',region:'ALL',league:'ALL',role:'ALL',q:'',staff:false,win:'A
 // ---------- header ----------
 function renderHeader(){
   $('subline').textContent='Snapshot of Riot’s League-Recognized Contract Database, pulled '+fmtDate(META.asOf)+'. '+R.length+' listings across '+T.length+' teams.';
-  $('fresh').innerHTML=REGS.map(function(g){
+  var ra=ageDays(META.asOf),rcls=ra>=3?'crit':ra>=2?'warn':'';
+  $('fresh').innerHTML='<span class="chip '+rcls+'" title="When this page\'s data was last rebuilt from Riot\'s sheet">'+(ra>=2?'Refresh may have stalled · last ':'Refreshed ')+fmtDate(META.asOf)+'</span>'+REGS.map(function(g){
     var a=ageDays(META.updated[g]);var cls=a>60?'crit':a>30?'warn':'';
     return '<span class="chip '+cls+'" title="Sheet last updated '+fmtDate(META.updated[g])+'">'+rlogo(g)+' '+a+'d old</span>';
   }).join('');
