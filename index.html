@@ -330,7 +330,7 @@ function endText(r){return r.ms!=null?fmtDate(r.end):(r.end&&r.end.charAt(0)==='
 function teamLabel(t){return t.name+' ('+t.lg+')'}
 
 // ---------- state ----------
-var S={view:'radar',region:'ALL',league:'ALL',role:'ALL',q:'',staff:false,win:'ALL',bucket:null,sort:'end',page:1,
+var S={view:'radar',region:'ALL',league:'ALL',role:'ALL',q:'',staff:false,showEnded:false,showNoEnd:false,win:'ALL',bucket:null,sort:'end',page:1,
   m:{cut:'2026-11-17',regs:{AME:1,CN:1,EMEA:1,KR:1,LCP:1},league:'ALL',ended:false,expand:{}},
   h:{sev:'ALL',key:'ALL',region:'ALL',q:'',page:1}};
 
@@ -363,7 +363,7 @@ function bucketLabel(k){
   if(k.length===10){var d=new Date(k+'T00:00:00Z');return d.getUTCDate()+' '+MON[d.getUTCMonth()]}
   var y=k.slice(0,4),m=+k.slice(5,7);return MON[m-1]+" '"+y.slice(2);
 }
-function radarBase(skipWin,skipBucket){
+function radarBase(skipWin,skipBucket,skipLive){
   var q=S.q.trim().toLowerCase();
   return R.filter(function(r){
     if(!S.staff&&!r.player)return false;
@@ -376,6 +376,11 @@ function radarBase(skipWin,skipBucket){
       else{var lim=+S.win*MS;if(!(r.ms!=null&&r.ms>=NOW&&r.ms-NOW<=lim))return false}
     }
     if(!skipBucket&&S.bucket&&bucketOf(r)!==S.bucket)return false;
+    if(!skipLive){
+      // Focus on current players: ended and undated listings are opt-in. The 'Already ended' window overrides the ended toggle.
+      if(!S.showEnded&&S.win!=='ended'&&r.ms!=null&&r.ms<NOW)return false;
+      if(!S.showNoEnd&&r.ms==null&&!r.end)return false;
+    }
     return true;
   });
 }
@@ -402,6 +407,8 @@ function mountRadar(){
     '<label>Sort<select id="f-sort"><option value="end">Ends soonest</option><option value="name">Name</option><option value="team">Team</option></select></label>'+
     '<label>Search<input type="search" id="f-q" placeholder="Player or team" value="'+esc(S.q)+'"></label>'+
     '<label class="check"><input type="checkbox" id="f-staff"'+(S.staff?' checked':'')+'> Include coaches and staff</label>'+
+    '<label class="check" title="Contracts whose end date is in the past but are still on Riot\'s sheet"><input type="checkbox" id="f-ended"'+(S.showEnded?' checked':'')+'> Show end date passed</label>'+
+    '<label class="check" title="Players with no end date on the sheet"><input type="checkbox" id="f-noend"'+(S.showNoEnd?' checked':'')+'> Show no end date</label>'+
    '</div>'+
    '<div class="tablewrap"><div class="tbl" id="tbl"></div></div><div id="pager"></div>';
   fillLeague();
@@ -412,6 +419,8 @@ function mountRadar(){
   $('f-win').onchange=function(e){S.win=e.target.value;S.page=1;updateRadar()};
   $('f-sort').onchange=function(e){S.sort=e.target.value;S.page=1;updateRadar()};
   $('f-q').oninput=function(e){S.q=e.target.value;S.page=1;S.bucket=null;updateRadar()};
+  $('f-ended').onchange=function(e){S.showEnded=e.target.checked;if(!S.showEnded&&S.bucket==='EXP')S.bucket=null;S.page=1;updateRadar()};
+  $('f-noend').onchange=function(e){S.showNoEnd=e.target.checked;S.page=1;updateRadar()};
   $('f-staff').onchange=function(e){S.staff=e.target.checked;if(!S.staff&&(S.role==='COACH'||S.role==='STAFF'))S.role='ALL';S.page=1;mountRadar();updateRadar()};
   updateRadar();
 }
@@ -419,17 +428,18 @@ function fillLeague(){$('f-league').innerHTML=optList(leagues(S.region),S.league
 function updateRadar(){
   // KPIs: players in current region/league/role/search scope
   var scope=radarBase(true,true).filter(function(r){return r.player});
+  var all=radarBase(true,true,true).filter(function(r){return r.player});
   var n14=0,n30=0,ended=0,nodate=0;
-  scope.forEach(function(r){
+  all.forEach(function(r){
     if(r.ms==null){if(!r.end)nodate++;return}
     if(r.ms<NOW)ended++;else{var d=r.ms-NOW;if(d<=14*MS)n14++;if(d<=30*MS)n30++}
   });
   $('kpis').innerHTML=
-   '<div class="kpi"><b>'+scope.length+'</b><span>players in view</span></div>'+
+   '<div class="kpi"><b>'+scope.length+'</b><span>current players in view</span></div>'+
    '<div class="kpi crit"><b>'+n14+'</b><span>contracts end within 14 days</span></div>'+
    '<div class="kpi warn"><b>'+n30+'</b><span>end within 30 days</span></div>'+
-   '<div class="kpi"><b>'+ended+'</b><span>end date passed, still listed</span></div>'+
-   '<div class="kpi"><b>'+nodate+'</b><span>players with no end date</span></div>';
+   '<div class="kpi"><b>'+ended+'</b><span>end date passed, still listed'+(S.showEnded?'':' · hidden')+'</span></div>'+
+   '<div class="kpi"><b>'+nodate+'</b><span>players with no end date'+(S.showNoEnd?'':' · hidden')+'</span></div>';
   // chart
   var map={};
   scope.forEach(function(r){var b=bucketOf(r);if(!b)return;(map[b]=map[b]||{n:0,reg:{}});map[b].n++;map[b].reg[r.t.reg]=(map[b].reg[r.t.reg]||0)+1});
