@@ -206,6 +206,8 @@ footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);line-he
 .chrow:last-child{border-bottom:0}
 .ck-add{color:var(--ok);border-color:#2c5a4d}.ck-rm{color:var(--crit);border-color:#6b2a33}.ck-end{color:var(--warn);border-color:#6b5320}
 @media (max-width:640px){.chrow{grid-template-columns:1fr 1fr}.chrow>:nth-child(3),.chrow>:nth-child(4){grid-column:1/-1}}
+.disc{margin:10px 0 0;font-size:12.5px;color:#a9b7c8}.disc a{color:var(--accent)}
+footer{color:#a9b7c8;font-size:13px}
 </style>
 </head>
 <body>
@@ -217,6 +219,7 @@ footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);line-he
       <h1>Contract Radar</h1>
       <p class="lede">Who is out of contract, when, and where the market is thin. Built on Riot’s League-Recognized Contract Database, across five regions.</p>
       <p class="sub" id="subline"></p>
+      <p class="disc">Unofficial fan project · not affiliated with or endorsed by Riot Games · data refreshed daily · <a href="#foot" data-go="foot">details</a></p>
     </div>
     <div class="fresh" id="fresh" aria-label="Last update per region sheet"></div>
   </header>
@@ -688,7 +691,7 @@ function updateChanges(){
 // ---------- routing and events ----------
 var VIEWS=['radar','market','changes','health'];
 function setView(v,noHash){
-  if(v!=='top'&&VIEWS.indexOf(v)<0)v='top';
+  if(v!=='top'&&v!=='foot'&&VIEWS.indexOf(v)<0)v='top';
   S.view=v;closeDrawer();
   var el=$(v);if(el){try{el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'})}catch(e){el.scrollIntoView()}}
   if(!noHash){try{history.replaceState(null,'','#'+v)}catch(e){}}
