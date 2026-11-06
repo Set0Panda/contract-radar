@@ -7,6 +7,7 @@ Who is out of contract, when, and where the market is thin. A static site built 
 - **Expiry radar** - current players by contract end date. Ended and undated listings are hidden by default and can be switched on. Filter by region, league, role and search; click any column header to sort, click again to reverse.
 - **Aligned end date countdown** - days until Riot's yearly aligned contract end date (2026: Mon 16 Nov, 23:59 UTC) and when free agency opens. After it passes, the banner switches to "Free agency opened".
 - **Region freshness** - how old each region's source sheet is, with a Current / Aging / Stale tag. An old sheet means old dates. Click a region to filter the radar to it (click again to clear).
+- **My follows** - follow teams, or a role in a region, and see only their expiries and changes. Saved in your browser; "Copy link" gives a URL that carries your list. Nothing is sent to a server.
 - **Market board** - who is exposed in a chosen window, by role.
 - **What changed** - additions, removals, moved end dates and role changes between daily snapshots. Tracking started 6 Nov 2026, so it fills in as the sheet changes.
 - **Data health** - problems in the source sheets, so you know what not to trust: stale sheets, duplicates, missing roles, ended dates still listed, and end dates that fall off Riot's aligned calendar.
@@ -21,7 +22,7 @@ Unofficial fan project, not affiliated with or endorsed by Riot Games. Powered b
 - The aligned-date calendar comes from a secondary source (see `reference/SOURCES.md`), not Riot's rulebook.
 
 ## How it works
-No build step: open `index.html`. `data.js` and `history.js` are rewritten every day by `.github/workflows/refresh.yml` (05:43 UTC, also runnable by hand), which runs `scripts/refresh.js`. The script stops without writing anything if its sanity checks fail (a region missing, row count off by more than 15%), so a broken sheet keeps yesterday's data live. Legal names and team contact emails are never written. The workflow needs Settings -> Actions -> General -> "Read and write permissions" to commit the refreshed files.
+No build step: open `index.html`. `data.js` and `history.js` are rewritten every day by `.github/workflows/refresh.yml` (05:43 UTC, also runnable by hand), which runs `scripts/refresh.js`. The script checks each region separately and stops without writing anything if a region is empty, its update stamp goes backwards, or its row count jumps more than 15% while the stamp is unchanged (or more than 50% down / 100% up even with a new stamp), so a broken sheet keeps yesterday's data live. A real mass change, such as the post-Worlds reset, can be let through by running the workflow by hand with the "force" input ticked. Legal names and team contact emails are never written. The workflow needs Settings -> Actions -> General -> "Read and write permissions" to commit the refreshed files.
 
 Visitor counts use GoatCounter (no cookies); the code is set in `site-config.js`.
 
