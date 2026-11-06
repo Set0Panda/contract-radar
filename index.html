@@ -473,9 +473,9 @@ function sortRows(rows){
     return dir*base(a,b)||str(a.name,b.name)||(a.id-b.id);
   });
 }
-function thBtn(k,label){
+function thBtn(k,label,tip){
   var on=S.sort===k;
-  return '<button class="sh'+(on?' on':'')+'" data-sort="'+k+'" aria-label="Sort by '+label+(on?(S.dir>0?', ascending':', descending'):'')+'">'+label+'<i>'+(on?(S.dir>0?'▲':'▼'):'')+'</i></button>';
+  return '<button class="sh'+(on?' on':'')+'"'+(tip?' title="'+tip+'"':'')+' data-sort="'+k+'" aria-label="Sort by '+label+(on?(S.dir>0?', ascending':', descending'):'')+'">'+label+'<i>'+(on?(S.dir>0?'▲':'▼'):'')+'</i></button>';
 }
 function mountRadar(){
   var roles=['TOP','JUNGLE','MID','BOT','SUPPORT','SUB','N/A'];
@@ -493,7 +493,7 @@ function mountRadar(){
     '<label class="check" title="Contracts whose end date is in the past but are still on Riot\'s sheet"><input type="checkbox" id="f-ended"'+(S.showEnded?' checked':'')+'> Show end date passed</label>'+
     '<label class="check" title="Players with no end date on the sheet"><input type="checkbox" id="f-noend"'+(S.showNoEnd?' checked':'')+'> Show no end date</label>'+
    '</div>'+
-   '<div class="tablewrap"><div class="tbl" id="tbl"></div></div><div id="pager"></div>';
+   '<div class="tablewrap"><div class="tbl" id="tbl"></div></div><div id="pager"></div><p class="hint" style="margin:8px 2px 0">Res: R = resident, N = non-resident, blank = not published by the league. Status is the sheet’s own label, shown as written.</p>';
   fillLeague();
   $('f-win').value=S.win;
   $('f-region').onchange=function(e){S.region=e.target.value;S.league='ALL';S.page=1;S.bucket=null;fillLeague();updateRadar()};
@@ -509,7 +509,7 @@ function mountRadar(){
 function fillLeague(){$('f-league').innerHTML=optList(leagues(S.region),S.league,'All leagues')}
 function trRow(r){
   var c=cd(r);
-  return '<button class="tr" data-player="'+r.id+'"><span class="name">'+esc(r.name)+'</span><span class="dim">'+esc(roleLabel(r))+'</span><span class="tcell">'+logo(r.t)+'<span>'+esc(r.t.name)+' <span class="dim">'+esc(r.t.lg)+'</span></span></span><span class="mono">'+rlogo(r.t.reg)+'</span><span class="mono">'+esc(endText(r))+'</span><span class="mono cd '+c.c+'">'+esc(c.t)+'</span><span>'+(r.res?'<span class="pill '+r.res+'">'+r.res+'</span>':'')+'</span><span class="dim">'+esc(r.st)+'</span></button>';
+  return '<button class="tr" data-player="'+r.id+'"><span class="name">'+esc(r.name)+'</span><span class="dim">'+esc(roleLabel(r))+'</span><span class="tcell">'+logo(r.t)+'<span>'+esc(r.t.name)+' <span class="dim">'+esc(r.t.lg)+'</span></span></span><span class="mono">'+rlogo(r.t.reg)+'</span><span class="mono">'+esc(endText(r))+'</span><span class="mono cd '+c.c+'">'+esc(c.t)+'</span><span>'+(r.res?'<span class="pill '+r.res+'" title="'+(r.res==='R'?'Resident':'Non-resident')+'">'+r.res+'</span>':'')+'</span><span class="dim">'+esc(r.st)+'</span></button>';
 }
 function markRegionCards(){
   Array.prototype.forEach.call(document.querySelectorAll('.fr[data-region]'),function(el){var on=el.getAttribute('data-region')===S.region;el.classList.toggle('on',on);el.setAttribute('aria-pressed',on?'true':'false')});
@@ -544,7 +544,7 @@ function updateRadar(){
   // table
   var rows=sortRows(radarBase(false,false));
   var per=60,shown=rows.slice(0,S.page*per);
-  var head='<div class="tr th"><span>'+thBtn('name','Player')+'</span><span>'+thBtn('role','Role')+'</span><span>'+thBtn('team','Team')+'</span><span>'+thBtn('region','Region')+'</span><span>'+thBtn('end','Contract end')+'</span><span>'+thBtn('end','Time left')+'</span><span>'+thBtn('res','Res')+'</span><span>'+thBtn('st','Status')+'</span></div>';
+  var head='<div class="tr th"><span>'+thBtn('name','Player')+'</span><span>'+thBtn('role','Role')+'</span><span>'+thBtn('team','Team')+'</span><span>'+thBtn('region','Region')+'</span><span>'+thBtn('end','Contract end')+'</span><span>'+thBtn('end','Time left')+'</span><span>'+thBtn('res','Res','Residency: R resident, N non-resident, blank not published')+'</span><span>'+thBtn('st','Status')+'</span></div>';
   $('tbl').innerHTML=head+(shown.length?shown.map(trRow).join(''):'<div class="empty">No listings match these filters.</div>');
   $('pager').innerHTML=rows.length>shown.length?'<button class="more" data-more="1">Show '+Math.min(per,rows.length-shown.length)+' more ('+(rows.length-shown.length)+' left of '+rows.length+')</button>':'<p class="dim" style="margin:8px 2px">'+rows.length+' listing'+(rows.length===1?'':'s')+'</p>';
 }
@@ -900,10 +900,10 @@ function mountFollows(){
   });
   list.sort(function(a,b){return endKey(a)-endKey(b)||a.name.localeCompare(b.name)});
   var cap=80,shown=list.slice(0,cap);
-  var head='<div class="tr th"><span>Player</span><span>Role</span><span>Team</span><span>Region</span><span>Contract end</span><span>Time left</span><span>Res</span><span>Status</span></div>';
+  var head='<div class="tr th"><span>Player</span><span>Role</span><span>Team</span><span>Region</span><span>Contract end</span><span>Time left</span><span title="Residency: R resident, N non-resident, blank not published">Res</span><span>Status</span></div>';
   var hasRole=items.some(function(it){return it.type==='r'});
   var exp='<h3 class="fsub">Expiries ('+list.length+')</h3>'+(hasRole?'<p class="hint" style="margin:0 0 8px">Teams show every player. Roles show players whose contract ends within 60 days or ended in the last 30.</p>':'')+
-    (shown.length?'<div class="tablewrap"><div class="tbl">'+head+shown.map(trRow).join('')+'</div></div>'+(list.length>cap?'<p class="dim" style="margin:8px 2px">'+(list.length-cap)+' more not shown. Use the radar above for the full list.</p>':''):'<div class="empty">No players to show.</div>');
+    (shown.length?'<div class="tablewrap"><div class="tbl">'+head+shown.map(trRow).join('')+'</div></div>'+(list.length>cap?'<p class="dim" style="margin:8px 2px">'+(list.length-cap)+' more not shown. Use the radar above for the full list.</p>':''):'<div class="empty">No players to show.</div>')+(shown.length?'<p class="hint" style="margin:8px 2px 0">Res: R = resident, N = non-resident, blank = not published by the league. Status is the sheet’s own label, shown as written.</p>':'');
   // changes
   var cutoff=Date.parse(META.asOf+'T00:00:00Z')-120*864e5;
   var ev=HIST.events.filter(function(e){return Date.parse(e[0]+'T00:00:00Z')>=cutoff&&followMatches(e,items)});
