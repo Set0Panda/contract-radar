@@ -234,7 +234,7 @@ footer{color:#a9b7c8;font-size:13px}
       <h1>Contract Radar</h1>
       <p class="lede">Who is out of contract, when, and where the market is thin. Built on Riot’s League-Recognized Contract Database, across five regions.</p>
       <p class="sub" id="subline"></p>
-      <p class="disc">Unofficial fan project · not affiliated with or endorsed by Riot Games · built with Claude (AI) · data refreshed daily · <a href="#foot" data-go="foot">details</a></p>
+      <p class="disc">Unofficial fan project · not affiliated with or endorsed by Riot Games · powered by <a href="https://claude.ai" rel="noopener">claude.ai</a> · data refreshed daily · <a href="#foot" data-go="foot">details</a></p>
     </div>
     <div class="fresh" id="fresh" aria-label="Last update per region sheet"></div>
   </header>
@@ -342,7 +342,7 @@ function renderHeader(){
     var a=ageDays(META.updated[g]);var cls=a>60?'crit':a>30?'warn':'';
     return '<span class="chip '+cls+'" title="Sheet last updated '+fmtDate(META.updated[g])+'">'+rlogo(g)+' '+a+'d old</span>';
   }).join('');
-  $('foot').textContent='Unofficial fan project: not affiliated with or endorsed by Riot Games. Built with Claude, an AI assistant made by Anthropic; the code and the data processing were written by AI, so check anything important against Riot’s sheet. Data comes from Riot’s League-Recognized Contract Database, refreshed once a day, and each region sheet is updated on its own schedule, so the age chips above matter. A contract end date is not a free-agency status: renewals and extensions may not be listed yet. KR roles come from Leaguepedia, which also supplies the team logos (trademarks of their owners). Legal names are left out on purpose.';
+  $('foot').textContent='Unofficial fan project: not affiliated with or endorsed by Riot Games. Powered by claude.ai (Claude, an AI assistant made by Anthropic): the code and data processing were written by AI, so check anything important against Riot’s sheet. Data comes from Riot’s League-Recognized Contract Database, refreshed once a day, and each region sheet is updated on its own schedule, so the age chips above matter. A contract end date is not a free-agency status: renewals and extensions may not be listed yet. KR roles come from Leaguepedia, which also supplies the team logos (trademarks of their owners). Legal names are left out on purpose.';
 }
 
 // ---------- shared filters ----------

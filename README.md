@@ -7,7 +7,7 @@ Who is out of contract, when, and where the market is thin. A static site built 
 - **What changed** - additions, removals, moved end dates and role changes between daily snapshots.
 - **Data health** - problems in the source sheets, so you know what not to trust.
 
-Unofficial fan project, not affiliated with or endorsed by Riot Games. Built with Claude (an AI assistant by Anthropic): the code and data processing were written by AI, so verify anything important against Riot's sheet. Team logos are trademarks of their owners.
+Unofficial fan project, not affiliated with or endorsed by Riot Games. Powered by claude.ai (Claude, an AI assistant by Anthropic): the code and data processing were written by AI, so verify anything important against Riot's sheet. Team logos are trademarks of their owners.
 
 ## How it works
 No build step: open `index.html`. `data.js` and `history.js` are rewritten every day by `.github/workflows/refresh.yml`, which runs `scripts/refresh.js`. The script stops without writing anything if its sanity checks fail (a region missing, row count off by more than 15%), so a broken sheet keeps yesterday's data live. Legal names and team contact emails are never written.
