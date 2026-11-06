@@ -43,19 +43,21 @@ button{cursor:pointer}
 header{padding:20px 0 12px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
 h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.04em;text-transform:uppercase;margin:0;line-height:1}
 .sub{color:var(--mute);margin:4px 0 0;font-size:13px}
-.fresh{display:block}
+.fresh{display:block;flex:1 1 100%;width:100%}
 .fr-top{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-bottom:12px}
 .fr-lbl{font-size:13px;color:var(--mute)}
-.frg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-.fr{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(17,24,33,.8)}
-.fr .rg{width:56px;height:50px}.fr .rg img{width:46px;height:46px}
-.fr b{display:block;font-family:var(--display);font-size:19px;letter-spacing:.04em;line-height:1.1}
-.fr .ago{display:block;font-size:13.5px;margin-top:2px}
-.fr .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;margin-top:5px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
+.frg{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.fr{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:18px;border:1px solid var(--line);border-radius:var(--r,12px);background:linear-gradient(160deg,var(--panel2),var(--panel));box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 8px 24px rgba(0,0,0,.25)}
+.fr::after{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--c,var(--accent)),transparent)}
+.fr .lgbox{display:flex;align-items:center;justify-content:center;width:100%;height:92px;border-radius:10px;background:linear-gradient(180deg,#e9eef4,#c9d4e0);border:1px solid rgba(255,255,255,.35);box-shadow:0 1px 0 rgba(255,255,255,.5) inset}
+.fr .lgbox img{width:132px;height:auto;max-width:82%}
+.fr b{display:block;font-family:var(--display);font-size:34px;letter-spacing:.04em;line-height:1}
+.fr .ago{display:block;font-size:15px;margin-top:4px}
+.fr .tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-top:8px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
 .fr.warn{border-color:var(--warn)}.fr.warn .tag{color:var(--warn);border-color:var(--warn)}
 .fr.crit{border-color:var(--crit)}.fr.crit .tag{color:var(--crit);border-color:var(--crit)}
 @media (max-width:980px){.frg{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:640px){.frg{grid-template-columns:repeat(2,minmax(0,1fr))}.fr{padding:10px}.fr .rg{width:46px}.fr .rg img{width:38px;height:38px}}
+@media (max-width:640px){.frg{grid-template-columns:repeat(2,minmax(0,1fr))}.fr{padding:14px;gap:10px}.fr .lgbox{height:68px}.fr .lgbox img{width:100px}.fr b{font-size:28px}}
 .chip{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel);display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 .chip.warn{border-color:var(--warn);color:var(--warn)}
@@ -363,7 +365,7 @@ function renderHeader(){
   $('fresh').innerHTML='<div class="fr-top"><span class="chip '+rcls+'" title="When this page\'s data was last rebuilt from Riot\'s sheet">'+(ra>=2?'Refresh may have stalled · last ':'Site refreshed ')+fmtDate(META.asOf)+'</span><span class="fr-lbl">When Riot last updated each region’s sheet. An old sheet means old dates.</span></div><div class="frg">'+REGS.map(function(g){
     var a=ageDays(META.updated[g]);var cls=a>60?'crit':a>30?'warn':'';
     var tag=a>60?'Stale':a>30?'Aging':'Current';
-    return '<div class="fr '+cls+'" title="Sheet last updated '+fmtDate(META.updated[g])+'">'+rlogo(g)+'<span><b>'+g+'</b><span class="ago">'+(a<1?'Today':a===1?'Yesterday':a+' days ago')+'</span><span class="tag">'+tag+'</span></span></div>';
+    return '<div class="fr '+cls+'" style="--c:'+RC[g]+'" title="Sheet last updated '+fmtDate(META.updated[g])+'"><span class="lgbox">'+(RL[g]?'<img alt="'+g+' logo" src="data:image/webp;base64,'+RL[g]+'">':'')+'</span><span><b>'+g+'</b><span class="ago">'+(a<1?'Today':a===1?'Yesterday':a+' days ago')+'</span><span class="tag">'+tag+'</span></span></div>';
   }).join('')+'</div>';
   $('foot').textContent='Unofficial fan project: not affiliated with or endorsed by Riot Games. Powered by claude.ai (Claude, an AI assistant made by Anthropic): the code and data processing were written by AI, so check anything important against Riot’s sheet. Data comes from Riot’s League-Recognized Contract Database, refreshed once a day, and each region sheet is updated on its own schedule, so the age chips above matter. A contract end date is not a free-agency status: renewals and extensions may not be listed yet. KR roles come from Leaguepedia, which also supplies the team logos (trademarks of their owners). Legal names are left out on purpose.';
 }
