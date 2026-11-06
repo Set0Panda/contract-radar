@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contract Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a dark ops-room console. Header with data freshness, three views (radar / market board / data health), a slide-in drawer for player and team detail. */
+:root{
+  --bg:#0a0e13; --panel:#111821; --panel2:#17212d; --line:#243040;
+  --ink:#e7edf4; --mute:#8b9aad; --accent:#5ad1e6;
+  --crit:#ff5d6c; --warn:#f5b841; --ok:#4fd1a5;
+  --display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45}
+body{min-height:100%}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px 48px}
+header{padding:20px 0 12px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.04em;text-transform:uppercase;margin:0;line-height:1}
+.sub{color:var(--mute);margin:4px 0 0;font-size:13px}
+.fresh{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:11.5px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--panel);display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.chip.warn{border-color:var(--warn);color:var(--warn)}
+.chip.crit{border-color:var(--crit);color:var(--crit)}
+
+.xnav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px;font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+.xnav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.kpi b{display:block;font-family:var(--mono);font-weight:500;font-size:28px;line-height:1.1}
+.kpi span{color:var(--mute);font-size:12px}
+.kpi.crit b{color:var(--crit)} .kpi.warn b{color:var(--warn)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:14px}
+.panel h2{font-family:var(--display);font-size:20px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 2px;font-weight:600}
+.panel p.hint{margin:0 0 10px;color:var(--mute);font-size:12.5px}
+.chart{display:flex;gap:6px;align-items:flex-end;overflow-x:auto;padding:18px 2px 4px}
+.bar{flex:0 0 40px;display:flex;flex-direction:column;align-items:center;background:none;border:1px solid transparent;border-radius:4px;padding:2px 0 4px}
+.bar:hover{background:var(--panel2)}
+.bar[aria-pressed="true"]{border-color:var(--accent);background:var(--panel2)}
+.bar .n{font-family:var(--mono);font-size:11px;color:var(--mute);height:16px}
+.stack{height:150px;width:22px;display:flex;flex-direction:column-reverse;justify-content:flex-start}
+.stack i{display:block;width:100%}
+.bar .x{font-size:10.5px;color:var(--mute);margin-top:4px;text-align:center;line-height:1.15}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;color:var(--mute);font-size:12px}
+.legend span{display:inline-flex;gap:5px;align-items:center}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
+.filters label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+select,input[type=search]{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:7px 9px;min-width:120px}
+input[type=search]{min-width:200px}
+.check{flex-direction:row !important;align-items:center;gap:6px !important;text-transform:none !important;letter-spacing:0 !important;font-size:13px !important;color:var(--ink) !important;padding-top:14px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.tbl{min-width:860px}
+.tr{display:grid;grid-template-columns:minmax(120px,1.2fr) 86px minmax(150px,1.6fr) 70px 112px 130px 36px 92px;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);align-items:center;width:100%;text-align:left;background:none;border-left:0;border-right:0;border-top:0;border-radius:0}
+button.tr:hover{background:var(--panel2)}
+.th{color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.06em;position:sticky;top:0;background:var(--panel)}
+.mono{font-family:var(--mono);font-size:12.5px}
+.name{font-weight:600}
+.dim{color:var(--mute)}
+.pill{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:3px;border:1px solid var(--line);color:var(--mute);display:inline-block;white-space:nowrap}
+.pill.R{color:var(--ok);border-color:#2c5a4d} .pill.N{color:var(--warn);border-color:#6b5320}
+.cd.urgent{color:var(--crit)} .cd.soon{color:var(--warn)} .cd.past{color:var(--mute);text-decoration:line-through}
+.more{display:block;width:100%;padding:10px;background:var(--panel);border:1px dashed var(--line);border-radius:6px;color:var(--accent);margin-top:8px}
+.board{display:grid;grid-template-columns:repeat(7,minmax(168px,1fr));gap:10px;overflow-x:auto;padding-bottom:6px}
+.col h3{font-family:var(--display);font-size:17px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 6px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline}
+.col h3 em{font-family:var(--mono);font-style:normal;font-size:12px;color:var(--mute)}
+.card{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-left-width:4px;border-radius:4px;padding:6px 8px;margin-bottom:6px}
+.card:hover{background:var(--panel2)}
+.card .t{color:var(--mute);font-size:11.5px;display:flex;justify-content:space-between;gap:6px}
+.exposed{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.exposed button{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:3px 8px;font-size:12px}
+.exposed button b{font-family:var(--mono);font-weight:500;color:var(--crit);margin-left:4px}
+.sev{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.sevbtn{text-align:left;background:var(--panel);border:1px solid var(--line);border-left-width:5px;border-radius:6px;padding:10px 14px}
+.sevbtn[aria-pressed="true"]{background:var(--panel2);outline:1px solid var(--accent)}
+.sevbtn b{font-family:var(--mono);font-size:26px;font-weight:500;display:block;line-height:1.1}
+.sevbtn span{color:var(--mute);font-size:12px}
+.sev-high{border-left-color:var(--crit)} .sev-med{border-left-color:var(--warn)} .sev-low{border-left-color:var(--mute)}
+.finding{display:grid;grid-template-columns:62px 220px minmax(160px,1.1fr) 2fr;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);border-left:4px solid var(--mute);align-items:start;width:100%;text-align:left;background:none;border-top:0;border-right:0;border-radius:0}
+.finding.high{border-left-color:var(--crit)} .finding.med{border-left-color:var(--warn)}
+button.finding:hover{background:var(--panel2)}
+.finding .s{font-family:var(--mono);font-size:11px;text-transform:uppercase}
+.finding.high .s{color:var(--crit)} .finding.med .s{color:var(--warn)}
+.finding .d{color:var(--mute);font-size:12.5px}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);background:var(--panel);border-left:1px solid var(--line);box-shadow:-12px 0 32px rgba(0,0,0,.45);transform:translateX(105%);transition:transform .18s ease;overflow-y:auto;padding:18px 18px 40px;z-index:10}
+#drawer.open{transform:none}
+#drawer h2{font-family:var(--display);font-size:28px;margin:0;line-height:1.05;letter-spacing:.02em}
+#drawer h4{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:15px;color:var(--mute);margin:18px 0 6px;font-weight:600}
+.x-close{position:absolute;top:10px;right:12px;background:none;border:1px solid var(--line);border-radius:4px;padding:2px 9px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;margin:10px 0}
+.kv dt{color:var(--mute)} .kv dd{margin:0;word-break:break-word}
+.row{display:grid;grid-template-columns:1fr auto auto;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:6px 2px;border-radius:0}
+.row:hover{background:var(--panel2)}
+.copy{margin-left:8px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 8px;font-size:12px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:8px 14px;border-radius:6px;z-index:20}
+footer{color:var(--mute);font-size:12px;margin-top:24px;max-width:80ch}
+.empty{padding:24px;color:var(--mute);text-align:center}
+.rg{display:inline-flex;align-items:center;justify-content:center;width:46px;height:40px;border-bottom:3px solid;vertical-align:middle;flex:none}.rg img{width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 0 1px rgba(255,255,255,.95)) drop-shadow(0 0 3px rgba(255,255,255,.35))}
+.lg:not(.ph){filter:drop-shadow(0 0 1px rgba(255,255,255,.7)) drop-shadow(0 0 2px rgba(255,255,255,.25))}
+.lg{width:40px;height:40px;object-fit:contain;flex:none;vertical-align:middle}
+.lg.sm{width:34px;height:34px}
+.lg.big{width:80px;height:80px}
+.ph{display:inline-grid;place-items:center;font:600 13px var(--mono);color:var(--mute);background:var(--panel2);border:1px solid var(--line);border-radius:4px}
+.tcell{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.head{display:flex;align-items:center;gap:12px;padding-right:64px}
+@media (max-width:640px){h1{font-size:28px}.sev{grid-template-columns:1fr}.finding{grid-template-columns:52px 1fr}.finding .d,.finding .tm{grid-column:2}}
+@media (prefers-reduced-motion:reduce){#drawer{transition:none}}
+
+html{scroll-behavior:auto}
+#top{position:sticky;top:0;z-index:8;background:rgba(10,14,19,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin:0;display:block;overflow:visible}
+.navin{max-width:1240px;margin:0 auto;padding:0 16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+#top .brand{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);text-decoration:none;padding:12px 0;white-space:nowrap}
+#top .links{display:flex;gap:2px;overflow-x:auto}
+#top .links a{font-family:var(--display);font-size:16px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);text-decoration:none;padding:13px 14px 10px;border-bottom:3px solid transparent;white-space:nowrap}
+#top .links a:hover{color:var(--ink)}
+#top .links a.on{color:var(--ink);border-bottom-color:var(--accent)}
+.hero{padding:44px 0 28px;align-items:flex-end}
+.hero h1{font-size:clamp(44px,8vw,84px);line-height:.95}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.lede{font-size:18px;max-width:58ch;margin:14px 0 8px;color:var(--ink)}
+.sec{padding-top:44px;scroll-margin-top:52px}
+.sechead{margin-bottom:14px;border-top:1px solid var(--line);padding-top:18px}
+.st{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw,40px);letter-spacing:.04em;text-transform:uppercase;margin:0;line-height:1}
+.ss{color:var(--mute);margin:6px 0 0;max-width:70ch}
+
+/* ---- polish pass ---- */
+:root{--r:12px;--glow:rgba(90,209,230,.10);--panel:#0f1620;--panel2:#16202c;--line:#223041}
+html{background:var(--bg)}
+body{background:
+  radial-gradient(900px 420px at 12% -80px,rgba(90,209,230,.16),transparent 70%),
+  radial-gradient(700px 380px at 95% 40px,rgba(120,98,255,.11),transparent 70%),
+  linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px) 0 0/44px 44px,
+  linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px) 0 0/44px 44px,
+  var(--bg);
+  background-attachment:fixed}
+::selection{background:rgba(90,209,230,.3)}
+*{scrollbar-width:thin;scrollbar-color:#2a3a4d transparent}
+#top{background:rgba(10,14,19,.78);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid rgba(255,255,255,.07)}
+#top .brand{background:linear-gradient(90deg,#fff,var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+#top .links a{border-radius:6px 6px 0 0;transition:color .15s,background .15s}
+#top .links a:hover{background:rgba(255,255,255,.04)}
+.hero{padding:64px 0 36px}
+.hero h1{background:linear-gradient(180deg,#ffffff 30%,#9fb3c8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.03em}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border:1px solid rgba(90,209,230,.3);border-radius:999px;background:rgba(90,209,230,.07)}
+.eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.lede{font-size:19px;line-height:1.5;color:#c9d5e2;max-width:56ch}
+.sub{max-width:64ch}
+.chip{border-radius:999px;padding:5px 12px 5px 8px;background:rgba(17,24,33,.8);transition:transform .15s,border-color .15s}
+.chip:hover{transform:translateY(-1px)}
+.sec{padding-top:56px}
+.sechead{border-top:0;padding-top:0;position:relative;padding-left:16px;margin-bottom:20px}
+.sechead::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:4px;border-radius:4px;background:linear-gradient(180deg,var(--accent),rgba(120,98,255,.8))}
+.ss{font-size:14.5px}
+.kpis{gap:12px;margin-bottom:16px}
+.kpi{border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;background:linear-gradient(160deg,var(--panel2),var(--panel));box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 8px 24px rgba(0,0,0,.25);transition:transform .15s,border-color .15s}
+.kpi::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent)}
+.kpi.crit::after{background:linear-gradient(90deg,var(--crit),transparent)}
+.kpi.warn::after{background:linear-gradient(90deg,var(--warn),transparent)}
+.kpi:hover{transform:translateY(-2px);border-color:#34465c}
+.kpi b{font-size:32px;letter-spacing:-.01em}
+.panel{border-radius:var(--r);padding:18px 20px;background:linear-gradient(180deg,var(--panel2),var(--panel) 120px);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.panel h2{font-size:22px}
+.bar{border-radius:8px;transition:background .15s,transform .15s}
+.bar:hover{transform:translateY(-2px)}
+.stack i:first-child{border-radius:0 0 3px 3px}.stack i:last-child{border-radius:3px 3px 0 0}
+.filters{padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:rgba(15,22,32,.7);gap:10px 12px}
+select,input[type=search]{border-radius:8px;padding:8px 11px;background:#0b1118;transition:border-color .15s,box-shadow .15s}
+select:hover,input[type=search]:hover{border-color:#37506b}
+select:focus,input[type=search]:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+.tablewrap{border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,.28);background:var(--panel)}
+.th{background:#121b26;padding-top:11px;padding-bottom:11px}
+.tr{padding:10px 14px;transition:background .12s}
+button.tr:hover{background:linear-gradient(90deg,rgba(90,209,230,.09),transparent 70%)}
+.pill{border-radius:999px;padding:1px 8px}
+.more{border-radius:var(--r);padding:12px;transition:background .15s,border-color .15s}
+.more:hover{background:var(--panel2);border-color:var(--accent)}
+.card{border-radius:8px;padding:8px 10px;transition:background .12s,transform .12s}
+.card:hover{transform:translateX(2px)}
+.exposed button{border-radius:999px;padding:4px 11px}
+.sevbtn{border-radius:var(--r);padding:14px 18px;background:linear-gradient(160deg,var(--panel2),var(--panel));box-shadow:0 8px 22px rgba(0,0,0,.25);transition:transform .15s}
+.sevbtn:hover{transform:translateY(-2px)}
+.sevbtn b{font-size:32px}
+.finding{padding:11px 14px;transition:background .12s}
+#drawer{background:rgba(15,22,32,.96);backdrop-filter:blur(14px);border-left:1px solid #2b3c52;border-radius:16px 0 0 16px}
+.x-close{border-radius:8px;padding:4px 12px}
+.row{border-radius:6px;padding:8px 6px}
+.toast{border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);line-height:1.6}
+.lg:not(.ph){transition:transform .15s}
+.tr:hover .lg{transform:scale(1.08)}
+@media (max-width:640px){.hero{padding:36px 0 24px}.lede{font-size:16px}.panel{padding:14px}.filters{padding:10px}.sec{padding-top:40px}#top .brand{display:none}#top .links{width:100%;justify-content:space-between}#top .links a{padding:13px 8px 10px;font-size:15px}}
+
+.chday{margin-bottom:16px}
+.chday h3{font-family:var(--display);font-size:18px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 6px;color:var(--mute);font-weight:600}
+.chrow{display:grid;grid-template-columns:140px 150px minmax(160px,1fr) 2fr;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);align-items:center}
+.chrow:last-child{border-bottom:0}
+.ck-add{color:var(--ok);border-color:#2c5a4d}.ck-rm{color:var(--crit);border-color:#6b2a33}.ck-end{color:var(--warn);border-color:#6b5320}
+@media (max-width:640px){.chrow{grid-template-columns:1fr 1fr}.chrow>:nth-child(3),.chrow>:nth-child(4){grid-column:1/-1}}
+</style>
+</head>
+<body>
+<nav id="top" aria-label="Sections"><div class="navin"><a class="brand" href="#top" data-go="top">Contract Radar</a><div class="links"><a href="#radar" data-go="radar">Expiry radar</a><a href="#market" data-go="market">Market board</a><a href="#changes" data-go="changes">What changed</a><a href="#health" data-go="health">Data health</a></div></div></nav>
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">League of Legends esports · contract intelligence</p>
+      <h1>Contract Radar</h1>
+      <p class="lede">Who is out of contract, when, and where the market is thin. Built on Riot’s League-Recognized Contract Database, across five regions.</p>
+      <p class="sub" id="subline"></p>
+    </div>
+    <div class="fresh" id="fresh" aria-label="Last update per region sheet"></div>
+  </header>
+  <section class="sec" id="radar"><div class="sechead"><h2 class="st">Expiry radar</h2><p class="ss">Every listed contract by end date. Filter by region, league and role, then open any player or team.</p></div><div id="sec-radar"></div></section>
+  <section class="sec" id="market"><div class="sechead"><h2 class="st">Market board</h2><p class="ss">Who is exposed to free agency in a chosen window, split by role.</p></div><div id="sec-market"></div></section>
+  <section class="sec" id="changes"><div class="sechead"><h2 class="st">What changed</h2><p class="ss">Roster and contract changes between daily snapshots. A new listing, a removed one, a moved end date, or a role change.</p></div><div id="sec-changes"></div></section>
+  <section class="sec" id="health"><div class="sechead"><h2 class="st">Data health</h2><p class="ss">Problems in the source sheets, so you know what not to trust.</p></div><div id="sec-health"></div></section>
+  <footer id="foot"></footer>
+</div>
+<aside id="drawer" aria-label="Detail" aria-hidden="true"></aside>
+<div id="toast" class="toast" hidden></div>
+<script src="data.js"></script>
+<script src="logos.js"></script>
+<script src="roles-kr.js"></script>
+<script src="regions.js"></script>
+<script src="history.js"></script>
+<script>
+(function(){
+'use strict';
+var MS=864e5, NOW=Date.now(), NOWY=new Date(NOW).getUTCFullYear();
+var REGS=['AME','CN','EMEA','KR','LCP'];
+var RC={AME:'#6aa7ff',CN:'#ff7a7a',EMEA:'#f5c451',KR:'#b18cff',LCP:'#4fd1a5'};
+var RL=window.GCD_REGLOGOS||{};
+function rlogo(g){return RL[g]?'<span class="rg" title="'+g+'" style="border-bottom-color:'+RC[g]+'"><img alt="'+g+'" src="data:image/webp;base64,'+RL[g]+'"></span>':'<i class="dot" style="background:'+RC[g]+'"></i>'+g}
+
+var STARTERS=['TOP','JUNGLE','MID','BOT','SUPPORT'];
+var ROLE_ORDER=['TOP','JUNGLE','MID','BOT','SUPPORT','SUB','COACH','STAFF',''];
+var TOP_LG={LEC:1,LCS:1,LPL:1,LCK:1,LCP:1,CBLOL:1};
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var META=window.GCD_META;
+
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function $(id){return document.getElementById(id)}
+var LOGOS=window.GCD_LOGOS||{};
+// Team logo from the embedded set, or a two-letter placeholder when the wiki had no match.
+function logo(t,cls){
+  var d=LOGOS[t.name],c=cls||'';
+  if(d)return '<img class="lg '+c+'" alt="" src="data:image/webp;base64,'+d+'">';
+  var px=c==='sm'?34:c==='big'?80:40;
+  return '<span class="lg ph '+c+'" style="width:'+px+'px;height:'+px+'px" aria-hidden="true">'+esc((t.code||t.name).replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase())+'</span>';
+}
+
+// ---------- data ----------
+var HAS_CON=window.GCD_TEAMS.some(function(t){return !!t[4]});
+var T=window.GCD_TEAMS.map(function(t,i){return {i:i,reg:t[0],lg:t[1]||'(no league)',name:t[2],code:t[3],con:t[4]}});
+var byTeam=T.map(function(){return []});
+// Some rows sit under a team name with a blank league label (e.g. one extra WeiboGaming row). Fold them into the labelled team.
+var canon=T.map(function(t){return t.i}),seenK={};
+T.forEach(function(t){var k=t.reg+'|'+t.name;if(seenK[k]===undefined)seenK[k]=t.i;else if(t.lg==='(no league)')canon[t.i]=seenK[k]});
+var XROLES=window.GCD_XROLES||{},HAS_X=Object.keys(XROLES).length>0;
+// Clean the snapshot before use: drop exact repeats, and drop a STAFF row when the same person on the same team is already a COACH or a player. The source sheet is untouched; what was dropped is listed in Data health.
+var CLEANED=[];
+var ROWS=(function(){
+  var seen={},byKey={},rank={COACH:1,STAFF:0};
+  window.GCD_ROWS.forEach(function(r){(byKey[r[0]+'|'+r[1].toLowerCase()]=byKey[r[0]+'|'+r[1].toLowerCase()]||[]).push(r)});
+  return window.GCD_ROWS.filter(function(r){
+    var k=r.join('\u0001');
+    if(seen[k]){CLEANED.push([r,'exact repeat']);return false}
+    seen[k]=1;
+    if(r[2]==='STAFF'){
+      var g=byKey[r[0]+'|'+r[1].toLowerCase()];
+      if(g.some(function(x){return x!==r&&x[2]!=='STAFF'})){CLEANED.push([r,'also listed in a more specific role']);return false}
+    }
+    return true;
+  });
+})();
+var R=ROWS.map(function(r,id){
+  var ti=canon[r[0]],t=T[ti];
+  var o={id:id,ti:ti,t:t,name:r[1],role:r[2],end:r[3],res:r[4],st:r[5],blank:ti!==r[0]};
+  // Riot's KR sheet has no role column. Starters and subs get a role from Leaguepedia (XROLES); everyone else on KR stays unlisted.
+  if(!o.role&&t.reg==='KR'&&XROLES[t.name+'|'+o.name]){o.role=XROLES[t.name+'|'+o.name];o.x=true}
+  o.player=STARTERS.indexOf(o.role)>=0||o.role==='SUB'||(o.role===''&&t.reg==='KR'&&!HAS_X);
+  o.ms=/^\d{4}-\d\d-\d\d$/.test(o.end)?Date.parse(o.end+'T23:59:00Z'):null;
+  byTeam[ti].push(o);
+  return o;
+});
+function roleLabel(r){return r.role||'N/A'}
+function fmtDate(iso){var d=new Date(iso+'T00:00:00Z');return d.getUTCDate()+' '+MON[d.getUTCMonth()]+' '+d.getUTCFullYear()}
+function ageDays(iso){return Math.floor((NOW-Date.parse(iso+'T12:00:00Z'))/MS)}
+function cd(r){
+  if(r.ms!=null){
+    var d=Math.ceil((r.ms-NOW)/MS);
+    if(r.ms<NOW){var a=Math.floor((NOW-r.ms)/MS);return {t:a<1?'ended today':'ended '+a+'d ago',c:'past'}}
+    return {t:d===0?'today':d+' d',c:d<=14?'urgent':d<=30?'soon':''};
+  }
+  if(r.end&&r.end.charAt(0)==='W')return {t:'after Worlds '+r.end.slice(1),c:''};
+  return {t:'no date',c:'dim'};
+}
+function endText(r){return r.ms!=null?fmtDate(r.end):(r.end&&r.end.charAt(0)==='W'?'Day after Worlds '+r.end.slice(1):'—')}
+function teamLabel(t){return t.name+' ('+t.lg+')'}
+
+// ---------- state ----------
+var S={view:'radar',region:'ALL',league:'ALL',role:'ALL',q:'',staff:false,win:'ALL',bucket:null,sort:'end',page:1,
+  m:{cut:'2026-11-17',regs:{AME:1,CN:1,EMEA:1,KR:1,LCP:1},league:'ALL',ended:false,expand:{}},
+  h:{sev:'ALL',key:'ALL',region:'ALL',q:'',page:1}};
+
+// ---------- header ----------
+function renderHeader(){
+  $('subline').textContent='Snapshot of Riot’s League-Recognized Contract Database, pulled '+fmtDate(META.asOf)+'. '+R.length+' listings across '+T.length+' teams.';
+  $('fresh').innerHTML=REGS.map(function(g){
+    var a=ageDays(META.updated[g]);var cls=a>60?'crit':a>30?'warn':'';
+    return '<span class="chip '+cls+'" title="Sheet last updated '+fmtDate(META.updated[g])+'">'+rlogo(g)+' '+a+'d old</span>';
+  }).join('');
+  $('foot').textContent='Unofficial fan project: not affiliated with or endorsed by Riot Games. Data comes from Riot’s League-Recognized Contract Database, refreshed once a day, and each region sheet is updated on its own schedule, so the age chips above matter. A contract end date is not a free-agency status: renewals and extensions may not be listed yet. KR roles come from Leaguepedia, which also supplies the team logos (trademarks of their owners). Legal names are left out on purpose.';
+}
+
+// ---------- shared filters ----------
+function leagues(reg){
+  var s={};T.forEach(function(t){if(byTeam[t.i].length&&(reg==='ALL'||t.reg===reg))s[t.lg]=1});
+  return Object.keys(s).sort();
+}
+function optList(vals,cur,all){return '<option value="ALL"'+(cur==='ALL'?' selected':'')+'>'+all+'</option>'+vals.map(function(v){return '<option value="'+esc(v)+'"'+(cur===v?' selected':'')+'>'+esc(v)+'</option>'}).join('')}
+
+// ---------- RADAR ----------
+function bucketOf(r){
+  if(r.ms==null)return null;
+  if(r.ms<NOW)return 'EXP';
+  return new Date(r.ms).getUTCFullYear()===NOWY?r.end:r.end.slice(0,7);
+}
+function bucketLabel(k){
+  if(k==='EXP')return 'Ended';
+  if(k.length===10){var d=new Date(k+'T00:00:00Z');return d.getUTCDate()+' '+MON[d.getUTCMonth()]}
+  var y=k.slice(0,4),m=+k.slice(5,7);return MON[m-1]+" '"+y.slice(2);
+}
+function radarBase(skipWin,skipBucket){
+  var q=S.q.trim().toLowerCase();
+  return R.filter(function(r){
+    if(!S.staff&&!r.player)return false;
+    if(S.region!=='ALL'&&r.t.reg!==S.region)return false;
+    if(S.league!=='ALL'&&r.t.lg!==S.league)return false;
+    if(S.role!=='ALL'&&roleLabel(r)!==S.role)return false;
+    if(q&&!(r.name.toLowerCase().indexOf(q)>=0||r.t.name.toLowerCase().indexOf(q)>=0||r.t.code.toLowerCase()===q))return false;
+    if(!skipWin&&S.win!=='ALL'){
+      if(S.win==='ended'){if(!(r.ms!=null&&r.ms<NOW))return false}
+      else{var lim=+S.win*MS;if(!(r.ms!=null&&r.ms>=NOW&&r.ms-NOW<=lim))return false}
+    }
+    if(!skipBucket&&S.bucket&&bucketOf(r)!==S.bucket)return false;
+    return true;
+  });
+}
+function sortRows(rows){
+  var k=S.sort;
+  var key=function(r){return r.ms!=null?r.ms:(r.end&&r.end.charAt(0)==='W'?9e15:9.1e15)};
+  return rows.slice().sort(function(a,b){
+    if(k==='name')return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    if(k==='team')return a.t.name.localeCompare(b.t.name)||key(a)-key(b);
+    return key(a)-key(b)||a.name.localeCompare(b.name);
+  });
+}
+function mountRadar(){
+  var roles=['TOP','JUNGLE','MID','BOT','SUPPORT','SUB','N/A'];
+  if(S.staff)roles=roles.concat(['COACH','STAFF']);
+  $('sec-radar').innerHTML=
+   '<div class="kpis" id="kpis"></div>'+
+   '<section class="panel"><h2>Contract end timeline</h2><p class="hint">Players only. One bar per end date this year, then per month. Click a bar to filter the table. Bars follow the region, league, role and search filters.</p><div class="chart" id="chart"></div><div class="legend" id="legend"></div></section>'+
+   '<div class="filters">'+
+    '<label>Region<select id="f-region">'+optList(REGS,S.region,'All regions')+'</select></label>'+
+    '<label>League<select id="f-league"></select></label>'+
+    '<label>Role<select id="f-role">'+optList(roles,S.role,'All roles')+'</select></label>'+
+    '<label>Contract ends<select id="f-win"><option value="ALL">Any time</option><option value="ended">Already ended, still listed</option><option value="14">Within 14 days</option><option value="30">Within 30 days</option><option value="90">Within 90 days</option></select></label>'+
+    '<label>Sort<select id="f-sort"><option value="end">Ends soonest</option><option value="name">Name</option><option value="team">Team</option></select></label>'+
+    '<label>Search<input type="search" id="f-q" placeholder="Player or team" value="'+esc(S.q)+'"></label>'+
+    '<label class="check"><input type="checkbox" id="f-staff"'+(S.staff?' checked':'')+'> Include coaches and staff</label>'+
+   '</div>'+
+   '<div class="tablewrap"><div class="tbl" id="tbl"></div></div><div id="pager"></div>';
+  fillLeague();
+  $('f-win').value=S.win;$('f-sort').value=S.sort;
+  $('f-region').onchange=function(e){S.region=e.target.value;S.league='ALL';S.page=1;S.bucket=null;fillLeague();updateRadar()};
+  $('f-league').onchange=function(e){S.league=e.target.value;S.page=1;S.bucket=null;updateRadar()};
+  $('f-role').onchange=function(e){S.role=e.target.value;S.page=1;S.bucket=null;updateRadar()};
+  $('f-win').onchange=function(e){S.win=e.target.value;S.page=1;updateRadar()};
+  $('f-sort').onchange=function(e){S.sort=e.target.value;S.page=1;updateRadar()};
+  $('f-q').oninput=function(e){S.q=e.target.value;S.page=1;S.bucket=null;updateRadar()};
+  $('f-staff').onchange=function(e){S.staff=e.target.checked;if(!S.staff&&(S.role==='COACH'||S.role==='STAFF'))S.role='ALL';S.page=1;mountRadar();updateRadar()};
+  updateRadar();
+}
+function fillLeague(){$('f-league').innerHTML=optList(leagues(S.region),S.league,'All leagues')}
+function updateRadar(){
+  // KPIs: players in current region/league/role/search scope
+  var scope=radarBase(true,true).filter(function(r){return r.player});
+  var n14=0,n30=0,ended=0,nodate=0;
+  scope.forEach(function(r){
+    if(r.ms==null){if(!r.end)nodate++;return}
+    if(r.ms<NOW)ended++;else{var d=r.ms-NOW;if(d<=14*MS)n14++;if(d<=30*MS)n30++}
+  });
+  $('kpis').innerHTML=
+   '<div class="kpi"><b>'+scope.length+'</b><span>players in view</span></div>'+
+   '<div class="kpi crit"><b>'+n14+'</b><span>contracts end within 14 days</span></div>'+
+   '<div class="kpi warn"><b>'+n30+'</b><span>end within 30 days</span></div>'+
+   '<div class="kpi"><b>'+ended+'</b><span>end date passed, still listed</span></div>'+
+   '<div class="kpi"><b>'+nodate+'</b><span>players with no end date</span></div>';
+  // chart
+  var map={};
+  scope.forEach(function(r){var b=bucketOf(r);if(!b)return;(map[b]=map[b]||{n:0,reg:{}});map[b].n++;map[b].reg[r.t.reg]=(map[b].reg[r.t.reg]||0)+1});
+  var keys=Object.keys(map).sort(function(a,b){if(a==='EXP')return -1;if(b==='EXP')return 1;return a<b?-1:a>b?1:0});
+  var max=0;keys.forEach(function(k){if(map[k].n>max)max=map[k].n});
+  $('chart').innerHTML=keys.length?keys.map(function(k){
+    var m=map[k];
+    var segs=REGS.filter(function(g){return m.reg[g]}).map(function(g){return '<i style="background:'+RC[g]+';height:'+Math.max(2,Math.round(m.reg[g]/max*150))+'px" title="'+g+': '+m.reg[g]+'"></i>'}).join('');
+    return '<button class="bar" data-bucket="'+k+'" aria-pressed="'+(S.bucket===k)+'" aria-label="'+bucketLabel(k)+': '+m.n+' players"><span class="n">'+m.n+'</span><span class="stack">'+segs+'</span><span class="x">'+esc(bucketLabel(k))+'</span></button>';
+  }).join(''):'<div class="empty">No dated contracts in this view.</div>';
+  $('legend').innerHTML=REGS.map(function(g){return '<span>'+rlogo(g)+'</span>'}).join('')+(S.bucket?'<span><button class="copy" data-clear="1">Clear date filter</button></span>':'');
+  // table
+  var rows=sortRows(radarBase(false,false));
+  var per=60,shown=rows.slice(0,S.page*per);
+  var head='<div class="tr th"><span>Player</span><span>Role</span><span>Team</span><span>Region</span><span>Contract end</span><span>Time left</span><span>Res</span><span>Status</span></div>';
+  $('tbl').innerHTML=head+(shown.length?shown.map(function(r){
+    var c=cd(r);
+    return '<button class="tr" data-player="'+r.id+'"><span class="name">'+esc(r.name)+'</span><span class="dim">'+esc(roleLabel(r))+'</span><span class="tcell">'+logo(r.t)+'<span>'+esc(r.t.name)+' <span class="dim">'+esc(r.t.lg)+'</span></span></span><span class="mono">'+rlogo(r.t.reg)+'</span><span class="mono">'+esc(endText(r))+'</span><span class="mono cd '+c.c+'">'+esc(c.t)+'</span><span>'+(r.res?'<span class="pill '+r.res+'">'+r.res+'</span>':'')+'</span><span class="dim">'+esc(r.st)+'</span></button>';
+  }).join(''):'<div class="empty">No listings match these filters.</div>');
+  $('pager').innerHTML=rows.length>shown.length?'<button class="more" data-more="1">Show '+Math.min(per,rows.length-shown.length)+' more ('+(rows.length-shown.length)+' left of '+rows.length+')</button>':'<p class="dim" style="margin:8px 2px">'+rows.length+' listing'+(rows.length===1?'':'s')+'</p>';
+}
+
+// ---------- MARKET BOARD ----------
+var CUTS=[['2026-11-17','By 17 Nov 2026 (the Nov 16-17 wave)'],['2026-11-30','By 30 Nov 2026'],['2026-12-31','By 31 Dec 2026'],['2027-12-31','By 31 Dec 2027'],['2099-12-31','Any listed end date']];
+var COLS=[['TOP','Top'],['JUNGLE','Jungle'],['MID','Mid'],['BOT','Bot'],['SUPPORT','Support'],['SUB','Sub'],['','No role listed']];
+function marketRows(){
+  var m=S.m,cut=Date.parse(m.cut+'T23:59:00Z');
+  return R.filter(function(r){
+    if(!r.player||r.ms==null)return false;
+    if(!m.regs[r.t.reg])return false;
+    if(m.league!=='ALL'&&r.t.lg!==m.league)return false;
+    if(r.ms>cut)return false;
+    if(!m.ended&&r.ms<NOW)return false;
+    return true;
+  }).sort(function(a,b){return a.ms-b.ms||a.name.localeCompare(b.name)});
+}
+function mountMarket(){
+  var m=S.m;
+  $('sec-market').innerHTML=
+   '<section class="panel"><h2>Market board</h2><p class="hint">Players whose listed contract ends inside the window, split by role. This shows who is exposed, not who is available: renewals may not be on the sheet yet.</p>'+
+   '<div class="filters" style="margin-bottom:0">'+
+    '<label>Window<select id="m-cut">'+CUTS.map(function(c){return '<option value="'+c[0]+'"'+(m.cut===c[0]?' selected':'')+'>'+c[1]+'</option>'}).join('')+'</select></label>'+
+    '<label>League<select id="m-league"></select></label>'+
+    REGS.map(function(g){return '<label class="check"><input type="checkbox" data-mreg="'+g+'"'+(m.regs[g]?' checked':'')+'>'+rlogo(g)+'</label>'}).join('')+
+    '<label class="check"><input type="checkbox" id="m-ended"'+(m.ended?' checked':'')+'> Include end dates already passed</label>'+
+   '</div></section>'+
+   '<section class="panel" id="m-sum"></section><div class="board" id="board"></div>';
+  fillMLeague();
+  $('m-cut').onchange=function(e){m.cut=e.target.value;m.expand={};updateMarket()};
+  $('m-league').onchange=function(e){m.league=e.target.value;m.expand={};updateMarket()};
+  $('m-ended').onchange=function(e){m.ended=e.target.checked;updateMarket()};
+  Array.prototype.forEach.call(document.querySelectorAll('[data-mreg]'),function(el){el.onchange=function(){m.regs[el.getAttribute('data-mreg')]=el.checked?1:0;fillMLeague();m.expand={};updateMarket()}});
+  updateMarket();
+}
+function fillMLeague(){
+  var m=S.m,s={};
+  T.forEach(function(t){if(byTeam[t.i].length&&m.regs[t.reg])s[t.lg]=1});
+  var list=Object.keys(s).sort();
+  if(m.league!=='ALL'&&!s[m.league])m.league='ALL';
+  $('m-league').innerHTML=optList(list,m.league,'All leagues');
+}
+function updateMarket(){
+  var m=S.m,rows=marketRows();
+  var byReg={};rows.forEach(function(r){byReg[r.t.reg]=(byReg[r.t.reg]||0)+1});
+  // most exposed rosters
+  var tm={};rows.forEach(function(r){tm[r.ti]=(tm[r.ti]||0)+1});
+  var ex=Object.keys(tm).map(function(k){var ps=byTeam[k].filter(function(r){return r.player});return {ti:+k,n:tm[k],size:ps.length}}).filter(function(x){return x.size>=4&&x.n/x.size>=.8}).sort(function(a,b){return b.n/b.size-a.n/a.size||b.n-a.n}).slice(0,16);
+  $('m-sum').innerHTML='<h2>'+rows.length+' players in the window</h2><p class="hint" style="margin:0">'+REGS.filter(function(g){return byReg[g]}).map(function(g){return '<span class="chip">'+rlogo(g)+' '+byReg[g]+'</span>'}).join(' ')+'</p>'+
+    (ex.length?'<p class="hint" style="margin:10px 0 0">Rosters with at least 80% of listed players in the window:</p><div class="exposed">'+ex.map(function(x){var t=T[x.ti];return '<button data-team="'+x.ti+'" class="tcell">'+logo(t,'sm')+esc(t.name)+' <b>'+x.n+'/'+x.size+'</b></button>'}).join('')+'</div>':'');
+  $('board').innerHTML=COLS.map(function(c){
+    var list=rows.filter(function(r){return r.role===c[0]});
+    if(c[0]===''&&!list.length)return '';
+    var lim=m.expand[c[0]||'NA']?list.length:25,shown=list.slice(0,lim);
+    return '<div class="col"><h3>'+c[1]+'<em>'+list.length+'</em></h3>'+shown.map(function(r){
+      var cc=cd(r);
+      return '<button class="card" style="border-left-color:'+RC[r.t.reg]+'" data-player="'+r.id+'"><span class="name">'+esc(r.name)+'</span> '+(r.res?'<span class="pill '+r.res+'">'+r.res+'</span>':'')+'<span class="t"><span class="tcell">'+logo(r.t,'sm')+esc(r.t.code||r.t.name)+'</span><span class="mono cd '+cc.c+'">'+esc(r.ms<NOW?fmtShort(r.end):fmtShort(r.end))+'</span></span></button>';
+    }).join('')+(list.length>lim?'<button class="more" data-expand="'+(c[0]||'NA')+'">+ '+(list.length-lim)+' more</button>':'')+'</div>';
+  }).join('');
+}
+function fmtShort(iso){var d=new Date(iso+'T00:00:00Z');return d.getUTCDate()+' '+MON[d.getUTCMonth()]+(d.getUTCFullYear()!==NOWY?" '"+String(d.getUTCFullYear()).slice(2):'')}
+
+// ---------- DATA HEALTH ----------
+var FINDINGS=null;
+function buildFindings(){
+  var F=[];
+  function add(sev,key,label,t,detail,reg){F.push({sev:sev,key:key,label:label,t:t,detail:detail,reg:t?t.reg:reg})}
+  // region freshness
+  REGS.forEach(function(g){
+    var a=ageDays(META.updated[g]);
+    if(a>60)add('high','stale','Region sheet looks stale',null,g+' sheet last updated '+fmtDate(META.updated[g])+' ('+a+' days ago). Contract ends and rosters may be out of date.',g);
+    else if(a>30)add('med','stale','Region sheet looks stale',null,g+' sheet last updated '+fmtDate(META.updated[g])+' ('+a+' days ago).',g);
+  });
+  // league coverage
+  var L={};
+  T.forEach(function(t){if(!byTeam[t.i].length)return;var o=L[t.lg]=L[t.lg]||{reg:t.reg,players:0,end:0,res:0,role:0,teams:{},con:0};o.teams[t.i]=1;if(t.con)o.con++;
+    byTeam[t.i].forEach(function(r){if(!r.player)return;o.players++;if(r.end)o.end++;if(r.res)o.res++;if(r.role)o.role++})});
+  var hasCoach={};R.forEach(function(r){if(r.role==='COACH')hasCoach[r.t.reg]=1});
+  Object.keys(L).forEach(function(lg){
+    var o=L[lg];if(!o.players)return;
+    var nt=Object.keys(o.teams).length;
+    if(!o.end)add('low','cov-end','League publishes no end dates',null,lg+': '+o.players+' players across '+nt+' teams have no contract end date.',o.reg);
+    if(!o.role)add('low','cov-role','League publishes no roles',null,lg+': none of the '+o.players+' players has a role, so role-based checks are skipped.',o.reg);
+    if(!o.res)add('low','cov-res','League publishes no residency',null,lg+': none of the '+o.players+' players has a residency status.',o.reg);
+  });
+  T.forEach(function(t){
+    var rows=byTeam[t.i],L0=L[t.lg]||{};
+    if(!rows.length)return;
+    var players=rows.filter(function(r){return r.player});
+    var bl=rows.filter(function(r){return r.blank});
+    if(t.lg==='(no league)')add('low','no-league','Rows without a league label',t,rows.length+' row'+(rows.length===1?'':'s')+' under this team have a blank league: '+rows.slice(0,4).map(function(r){return r.name}).join(', ')+'.');
+    else if(bl.length)add('low','no-league','Rows without a league label',t,bl.map(function(r){return r.name}).join(', ')+' '+(bl.length===1?'is':'are')+' listed with a blank league. Counted as part of this team here.');
+    // roster shape
+    if(t.reg==='KR'){
+      if(players.length&&players.length<5)add('high','thin','Roster looks too thin',t,'Only '+players.length+' players listed.');
+    }else{
+      var have={};players.forEach(function(r){have[r.role]=1});
+      var sev=TOP_LG[t.lg]?'high':'med';
+      if(!players.length)add(sev,'no-players','No players listed',t,'Only staff rows ('+rows.length+') are listed for this team.');
+      else{var miss=STARTERS.filter(function(x){return !have[x]});
+        if(miss.length&&L0.role)add(sev,'missing-role','Starting role missing',t,'No '+miss.join(', ')+' listed. '+players.length+' player'+(players.length===1?'':'s')+' on the sheet.')}
+      if(hasCoach[t.reg]&&TOP_LG[t.lg]&&!rows.some(function(r){return r.role==='COACH'}))add('med','no-coach','No coach listed',t,'Top-flight team with no coach row.');
+    }
+    // duplicates inside team
+    var seen={};rows.forEach(function(r){var k=r.name.toLowerCase();(seen[k]=seen[k]||[]).push(r)});
+    Object.keys(seen).forEach(function(k){var g=seen[k];if(g.length<2)return;
+      var same=g.every(function(r){return r.role===g[0].role});
+      if(same)add('high','dup-in-team','Duplicate entry on the same team',t,'“'+g[0].name+'” is listed '+g.length+' times as '+roleLabel(g[0])+'.');
+      else add('low','multi-role','Same person under two roles',t,'“'+g[0].name+'”: '+g.map(roleLabel).join(' and ')+'.');
+    });
+    // expired
+    var exp=rows.filter(function(r){return r.ms!=null&&r.ms<NOW});
+    if(exp.length){
+      var oldest=Math.max.apply(null,exp.map(function(r){return Math.floor((NOW-r.ms)/MS)}));
+      exp.sort(function(a,b){return a.ms-b.ms});
+      add(oldest>30?'med':'low','expired','Contract end date already passed',t,exp.length+' listing'+(exp.length===1?'':'s')+', oldest ended '+oldest+' days ago: '+exp.slice(0,4).map(function(r){return r.name+' ('+fmtShort(r.end)+')'}).join(', ')+(exp.length>4?' and '+(exp.length-4)+' more':'')+'.');
+    }
+    // gaps vs league norm
+    if(L0.end){var ne=players.filter(function(r){return !r.end});if(ne.length)add('low','no-end','Player missing an end date',t,ne.map(function(r){return r.name}).slice(0,5).join(', ')+(ne.length>5?' and '+(ne.length-5)+' more':'')+'.')}
+    if(L0.res){var nr=players.filter(function(r){return !r.res});if(nr.length)add('low','no-res','Player missing residency',t,nr.map(function(r){return r.name}).slice(0,5).join(', ')+(nr.length>5?' and '+(nr.length-5)+' more':'')+'.')}
+    if(L0.con&&!t.con)add('low','no-contact','No team contact listed',t,'Other teams in '+t.lg+' have a contact; this one does not.');
+  });
+  // cross-team duplicates
+  var names={};
+  R.forEach(function(r){if(!r.player||r.name.length<3)return;var k=r.name.toLowerCase();(names[k]=names[k]||[]).push(r)});
+  Object.keys(names).forEach(function(k){
+    var g=names[k],tis={};g.forEach(function(r){tis[r.ti]=1});
+    var ids=Object.keys(tis);if(ids.length<2)return;
+    var inactive=g.some(function(r){return r.st==='Inactive'});
+    var first=T[+ids[0]];
+    add(inactive?'low':'med','dup-across','Same name on more than one team',first,'“'+g[0].name+'” appears on '+ids.map(function(i){return T[+i].name+' ('+T[+i].lg+')'}).join(' and ')+'. Name match only, so verify it is a transfer or a different player.');
+  });
+  var rank={high:0,med:1,low:2};
+  F.sort(function(a,b){return rank[a.sev]-rank[b.sev]||a.label.localeCompare(b.label)||(a.t?a.t.name:'').localeCompare(b.t?b.t.name:'')});
+  return F;
+}
+var SEVN={high:'High',med:'Medium',low:'Low'};
+function mountHealth(){
+  if(!FINDINGS)FINDINGS=buildFindings();
+  var cnt={high:0,med:0,low:0};FINDINGS.forEach(function(f){cnt[f.sev]++});
+  var keys={};FINDINGS.forEach(function(f){keys[f.key]=f.label});
+  var h=S.h;
+  $('sec-health').innerHTML=
+   '<div class="sev">'+['high','med','low'].map(function(s){return '<button class="sevbtn sev-'+s+'" data-sev="'+s+'" aria-pressed="'+(h.sev===s)+'"><b>'+cnt[s]+'</b><span>'+SEVN[s]+' severity</span></button>'}).join('')+'</div>'+
+   (CLEANED.length?'<p class="hint" style="margin:0 0 10px;color:var(--ok)"><b>Cleaned automatically ('+CLEANED.length+' row'+(CLEANED.length===1?'':'s')+' dropped before anything on this page is counted):</b> '+CLEANED.map(function(c){var t=T[canon[c[0][0]]];return esc(c[0][1])+' ('+esc(t.name)+', '+esc(c[0][2]||'N/A')+') – '+c[1]}).join('; ')+'. The source sheet itself still has them.</p>':'')+
+   '<p class="hint dim" style="margin:0 0 10px">Checks run on the snapshot: missing starting roles, duplicate entries, end dates already passed, stale region sheets and coverage gaps. High means the sheet is probably wrong or unusable for that team. Medium and low need a human look. A finding is a lead, not proof of an error.</p>'+
+   '<div class="filters">'+
+    '<label>Check<select id="h-key"><option value="ALL">All checks</option>'+Object.keys(keys).sort(function(a,b){return keys[a].localeCompare(keys[b])}).map(function(k){return '<option value="'+k+'"'+(h.key===k?' selected':'')+'>'+esc(keys[k])+'</option>'}).join('')+'</select></label>'+
+    '<label>Region<select id="h-region">'+optList(REGS,h.region,'All regions')+'</select></label>'+
+    '<label>Search<input type="search" id="h-q" placeholder="Team, player or text" value="'+esc(h.q)+'"></label>'+
+   '</div><div class="tablewrap"><div id="hlist" style="min-width:640px"></div></div><div id="hpager"></div>';
+  $('h-key').onchange=function(e){h.key=e.target.value;h.page=1;updateHealth()};
+  $('h-region').onchange=function(e){h.region=e.target.value;h.page=1;updateHealth()};
+  $('h-q').oninput=function(e){h.q=e.target.value;h.page=1;updateHealth()};
+  updateHealth();
+}
+function updateHealth(){
+  var h=S.h,q=h.q.trim().toLowerCase();
+  var list=FINDINGS.filter(function(f){
+    if(h.sev!=='ALL'&&f.sev!==h.sev)return false;
+    if(h.key!=='ALL'&&f.key!==h.key)return false;
+    if(h.region!=='ALL'&&f.reg!==h.region)return false;
+    if(q&&(f.label+' '+f.detail+' '+(f.t?f.t.name+' '+f.t.lg:'')).toLowerCase().indexOf(q)<0)return false;
+    return true;
+  });
+  var per=70,shown=list.slice(0,h.page*per);
+  Array.prototype.forEach.call(document.querySelectorAll('.sevbtn'),function(b){b.setAttribute('aria-pressed',String(h.sev===b.getAttribute('data-sev')))});
+  $('hlist').innerHTML=shown.length?shown.map(function(f){
+    var inner='<span class="s">'+SEVN[f.sev]+'</span><span class="name">'+esc(f.label)+'</span><span class="tm">'+(f.t?'<span class="tcell">'+logo(f.t,'sm')+'<span>'+esc(f.t.name)+'</span></span> <span class="dim">'+esc(f.t.lg)+' · '+f.t.reg+'</span>':'<span class="dim">Region '+f.reg+'</span>')+'</span><span class="d">'+esc(f.detail)+'</span>';
+    return f.t?'<button class="finding '+f.sev+'" data-team="'+f.t.i+'">'+inner+'</button>':'<div class="finding '+f.sev+'">'+inner+'</div>';
+  }).join(''):'<div class="empty">No findings match.</div>';
+  $('hpager').innerHTML=list.length>shown.length?'<button class="more" data-hmore="1">Show more ('+(list.length-shown.length)+' left of '+list.length+')</button>':'<p class="dim" style="margin:8px 2px">'+list.length+' finding'+(list.length===1?'':'s')+'</p>';
+}
+
+// ---------- DRAWER ----------
+var drawer=$('drawer');
+function openDrawer(html){drawer.innerHTML='<button class="x-close" data-close="1" aria-label="Close detail">Close</button>'+html;drawer.classList.add('open');drawer.setAttribute('aria-hidden','false');drawer.scrollTop=0}
+function closeDrawer(){drawer.classList.remove('open');drawer.setAttribute('aria-hidden','true')}
+function contactBlock(t){
+  if(!HAS_CON)return '<dd class="dim">Not shown on the public version</dd>';
+  if(!t.con)return '<dd class="dim">None listed</dd>';
+  return '<dd>'+esc(t.con)+'<button class="copy" data-copy="'+esc(t.con)+'">Copy</button></dd>';
+}
+function openPlayer(id){
+  var r=R[id],t=r.t,c=cd(r);
+  var mates=byTeam[t.i].filter(function(x){return x.id!==id}).sort(function(a,b){return ROLE_ORDER.indexOf(a.role)-ROLE_ORDER.indexOf(b.role)});
+  var same=R.filter(function(x){return x.id!==id&&x.name.toLowerCase()===r.name.toLowerCase()&&x.ti!==r.ti});
+  openDrawer(
+   '<h2>'+esc(r.name)+'</h2><p class="dim" style="margin:4px 0 0">'+esc(roleLabel(r))+(r.x?' · role from Leaguepedia, not Riot':'')+(r.res?' · '+(r.res==='R'?'Resident':'Non-resident'):'')+(r.st?' · '+esc(r.st):'')+'</p>'+
+   '<dl class="kv"><dt>Team</dt><dd><button class="copy" style="margin:0" data-team="'+t.i+'">'+esc(t.name)+'</button> <span class="dim">'+esc(t.lg)+' · '+t.reg+(t.code?' · '+esc(t.code):'')+'</span></dd>'+
+   '<dt>Contract ends</dt><dd class="mono">'+esc(endText(r))+(r.ms!=null?' 23:59 UTC':'')+'</dd>'+
+   '<dt>Time left</dt><dd class="mono cd '+c.c+'">'+esc(c.t)+'</dd>'+
+   '<dt>Team contact</dt>'+contactBlock(t)+'</dl>'+
+   '<h4>Teammates on the sheet</h4>'+(mates.length?mates.map(function(x){var cc=cd(x);return '<button class="row" data-player="'+x.id+'"><span><span class="name">'+esc(x.name)+'</span> <span class="dim">'+esc(roleLabel(x))+'</span></span><span class="mono">'+esc(endText(x))+'</span><span class="mono cd '+cc.c+'">'+esc(cc.t)+'</span></button>'}).join(''):'<p class="dim">Nobody else listed.</p>')+
+   (same.length?'<h4>Same name elsewhere</h4>'+same.map(function(x){return '<button class="row" data-player="'+x.id+'"><span><span class="name">'+esc(x.name)+'</span> <span class="dim">'+esc(x.t.name)+'</span></span><span class="mono">'+esc(roleLabel(x))+'</span><span class="mono">'+x.t.reg+'</span></button>'}).join(''):'')
+  );
+}
+function openTeam(ti){
+  var t=T[ti];
+  var rows=byTeam[ti].slice().sort(function(a,b){return ROLE_ORDER.indexOf(a.role)-ROLE_ORDER.indexOf(b.role)});
+  var fs=(FINDINGS||(FINDINGS=buildFindings())).filter(function(f){return f.t===t});
+  openDrawer(
+   '<div class="head">'+logo(t,'big')+'<div><h2>'+esc(t.name)+'</h2><p class="dim" style="margin:4px 0 0">'+esc(t.lg)+' · '+t.reg+(t.code?' · '+esc(t.code):'')+'</p></div></div>'+
+   '<dl class="kv"><dt>Team contact</dt>'+contactBlock(t)+'<dt>Listings</dt><dd>'+rows.length+'</dd></dl>'+
+   (fs.length?'<h4>Data health</h4>'+fs.map(function(f){return '<p style="margin:0 0 8px"><span class="pill" style="color:'+(f.sev==='high'?'var(--crit)':f.sev==='med'?'var(--warn)':'var(--mute)')+'">'+SEVN[f.sev]+'</span> <b>'+esc(f.label)+'</b><br><span class="dim">'+esc(f.detail)+'</span></p>'}).join(''):'')+
+   '<h4>Roster as listed</h4>'+rows.map(function(x){var cc=cd(x);return '<button class="row" data-player="'+x.id+'"><span><span class="name">'+esc(x.name)+'</span> <span class="dim">'+esc(roleLabel(x))+'</span></span><span class="mono">'+esc(endText(x))+'</span><span class="mono cd '+cc.c+'">'+esc(cc.t)+'</span></button>'}).join('')
+  );
+}
+var toastT;
+function toast(msg){var el=$('toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){el.hidden=true},1800)}
+
+// ---------- CHANGES ----------
+var HIST=window.GCD_HISTORY||{since:null,events:[]};
+var CH={days:'14',kind:'ALL'};
+var CHK={add:['Added','ok'],rm:['No longer listed','crit'],end:['End date moved','warn'],role:['Role changed','mute'],bulk:['Bulk change','mute']};
+function chEvents(){
+  var cut=Date.parse(META.asOf+'T00:00:00Z')-(+CH.days)*864e5;
+  return HIST.events.filter(function(e){return Date.parse(e[0]+'T00:00:00Z')>=cut&&(CH.kind==='ALL'||e[3]===CH.kind)});
+}
+function chText(e){
+  var k=e[3];
+  if(k==='add')return 'New listing'+(e[5]?', contract ends '+esc(fmtEnd(e[5])):'');
+  if(k==='rm')return 'Dropped from the sheet'+(e[4]?' (was '+esc(fmtEnd(e[4]))+')':'');
+  if(k==='end'){var a=e[4],b=e[5],up=/^\d{4}/.test(a)&&/^\d{4}/.test(b)&&b>a;return (up?'Extended: ':a&&b?'Shortened: ':'Changed: ')+esc(fmtEnd(a))+' → '+esc(fmtEnd(b))}
+  if(k==='role')return esc(e[4]||'N/A')+' → '+esc(e[5]||'N/A');
+  if(k==='bulk')return 'Large change ('+esc(e[4])+' added, '+esc(e[5])+' dropped) – probably a sheet restructure, so not listed player by player.';
+  return '';
+}
+function fmtEnd(v){if(!v)return 'no date';if(/^W\d{4}$/.test(v))return 'after Worlds '+v.slice(1);return /^\d{4}-\d\d-\d\d$/.test(v)?fmtDate(v):v}
+function mountChanges(){
+  var el=$('sec-changes');
+  if(!HIST.since){el.innerHTML='<div class="panel"><p class="dim" style="margin:0">Change history is not available in this build.</p></div>';return}
+  var all=HIST.events;
+  el.innerHTML=
+   '<div class="filters"><label>Period<select id="c-days"><option value="7">Last 7 days</option><option value="14" selected>Last 14 days</option><option value="30">Last 30 days</option><option value="120">Everything kept</option></select></label>'+
+   '<label>Type<select id="c-kind"><option value="ALL">All changes</option><option value="add">Added</option><option value="rm">No longer listed</option><option value="end">End date moved</option><option value="role">Role changed</option></select></label></div>'+
+   '<div id="c-list"></div>';
+  $('c-days').onchange=function(e){CH.days=e.target.value;updateChanges()};
+  $('c-kind').onchange=function(e){CH.kind=e.target.value;updateChanges()};
+  updateChanges();
+}
+function updateChanges(){
+  var ev=chEvents(),box=$('c-list');
+  if(!ev.length){
+    box.innerHTML='<div class="panel"><p style="margin:0 0 6px"><b>Nothing to show yet.</b></p><p class="dim" style="margin:0">Tracking started on '+fmtDate(HIST.since)+'. The page compares each daily snapshot with the one before it, so changes appear after the first refresh that finds one. '+(HIST.events.length?'There are '+HIST.events.length+' older changes outside this filter.':'')+'</p></div>';
+    return;
+  }
+  var cnt={add:0,rm:0,end:0,role:0};ev.forEach(function(e){if(cnt[e[3]]!=null)cnt[e[3]]++});
+  var byDay={};ev.forEach(function(e){(byDay[e[0]]=byDay[e[0]]||[]).push(e)});
+  var days=Object.keys(byDay).sort().reverse();
+  box.innerHTML=
+   '<div class="kpis">'+['add','rm','end','role'].map(function(k){return '<div class="kpi '+(k==='rm'?'crit':k==='end'?'warn':'')+'"><b>'+cnt[k]+'</b><span>'+CHK[k][0]+'</span></div>'}).join('')+'</div>'+
+   days.map(function(d){
+     return '<div class="chday"><h3>'+fmtDate(d)+'</h3><div class="tablewrap">'+byDay[d].map(function(e){
+       var ti=-1;for(var i=0;i<T.length;i++){if(T[i].name===e[1]){ti=i;break}}
+       var tm=ti>=0?'<span class="tcell">'+logo(T[ti],'sm')+'<span>'+esc(e[1])+'</span></span>':'<span class="dim">'+esc(e[1])+'</span>';
+       return '<div class="chrow"><span class="pill ck-'+e[3]+'">'+esc(CHK[e[3]]?CHK[e[3]][0]:e[3])+'</span><span class="name">'+(e[2]==='*'?'':esc(e[2]))+'</span><span>'+(e[1]==='*'?'':tm)+'</span><span class="dim">'+chText(e)+'</span></div>'}).join('')+'</div></div>'}).join('');
+}
+// ---------- routing and events ----------
+var VIEWS=['radar','market','changes','health'];
+function setView(v,noHash){
+  if(v!=='top'&&VIEWS.indexOf(v)<0)v='top';
+  S.view=v;closeDrawer();
+  var el=$(v);if(el){try{el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'})}catch(e){el.scrollIntoView()}}
+  if(!noHash){try{history.replaceState(null,'','#'+v)}catch(e){}}
+}
+var spy=function(){var y=window.scrollY+120,cur='';VIEWS.forEach(function(x){if($(x).offsetTop<=y)cur=x});
+  document.querySelectorAll('#top .links a').forEach(function(l){l.classList.toggle('on',l.getAttribute('data-go')===cur)})};
+window.addEventListener('scroll',spy,{passive:true});
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-go],[data-bucket],[data-clear],[data-more],[data-player],[data-team],[data-close],[data-copy],[data-expand],[data-sev],[data-hmore]');
+  if(!el)return;
+  if(el.hasAttribute('data-go')){e.preventDefault();return setView(el.getAttribute('data-go'))}
+  if(el.hasAttribute('data-bucket')){var b=el.getAttribute('data-bucket');S.bucket=S.bucket===b?null:b;S.page=1;return updateRadar()}
+  if(el.hasAttribute('data-clear')){S.bucket=null;return updateRadar()}
+  if(el.hasAttribute('data-more')){S.page++;return updateRadar()}
+  if(el.hasAttribute('data-hmore')){S.h.page++;return updateHealth()}
+  if(el.hasAttribute('data-expand')){S.m.expand[el.getAttribute('data-expand')]=1;return updateMarket()}
+  if(el.hasAttribute('data-sev')){var s=el.getAttribute('data-sev');S.h.sev=S.h.sev===s?'ALL':s;S.h.page=1;return updateHealth()}
+  if(el.hasAttribute('data-player'))return openPlayer(+el.getAttribute('data-player'));
+  if(el.hasAttribute('data-team'))return openTeam(+el.getAttribute('data-team'));
+  if(el.hasAttribute('data-close'))return closeDrawer();
+  if(el.hasAttribute('data-copy')){
+    var txt=el.getAttribute('data-copy');
+    try{navigator.clipboard.writeText(txt).then(function(){toast('Copied')},function(){toast('Copy blocked here. Select the text instead.')})}catch(err){toast('Copy blocked here. Select the text instead.')}
+  }
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDrawer()});
+window.addEventListener('hashchange',function(){var v=location.hash.replace('#','');if(v)setView(v,true)});
+
+renderHeader();
+mountRadar();mountMarket();mountChanges();mountHealth();
+var start=(location.hash||'').replace('#','');
+if(start&&start!=='top')setTimeout(function(){setView(start,true)},60);
+spy();
+})();
+</script>
+</body>
+</html>
