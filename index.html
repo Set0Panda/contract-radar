@@ -84,7 +84,7 @@ button.tr:hover{background:var(--panel2)}
 .dim{color:var(--mute)}
 .pill{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:3px;border:1px solid var(--line);color:var(--mute);display:inline-block;white-space:nowrap}
 .pill.R{color:var(--ok);border-color:#2c5a4d} .pill.N{color:var(--warn);border-color:#6b5320}
-.cd.urgent{color:var(--crit)} .cd.soon{color:var(--warn)} .cd.past{color:var(--mute);text-decoration:line-through}
+.cd.urgent{color:var(--crit)} .cd.soon{color:var(--warn)} .cd.past{color:var(--mute)}
 .more{display:block;width:100%;padding:10px;background:var(--panel);border:1px dashed var(--line);border-radius:6px;color:var(--accent);margin-top:8px}
 .board{display:grid;grid-template-columns:repeat(7,minmax(168px,1fr));gap:10px;overflow-x:auto;padding-bottom:6px}
 .col h3{font-family:var(--display);font-size:17px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 6px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline}
@@ -116,6 +116,13 @@ button.finding:hover{background:var(--panel2)}
 .kv dt{color:var(--mute)} .kv dd{margin:0;word-break:break-word}
 .row{display:grid;grid-template-columns:1fr auto auto;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:6px 2px;border-radius:0}
 .row:hover{background:var(--panel2)}
+.row.m{grid-template-columns:62px minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 6px}
+.row.m .rl{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--mute);text-transform:uppercase}
+.row.m .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.m .rt{display:flex;flex-direction:column;align-items:flex-end;line-height:1.3;text-align:right}
+.row.m .rt .d{font-size:12.5px}.row.m .rt .cd{font-size:11px}
+.row.m.gone .nm,.row.m.gone .d{color:var(--mute);font-weight:500}
+#drawer h4 small{font-family:var(--mono);font-size:11px;color:var(--mute);margin-left:6px;letter-spacing:0;font-weight:400}
 .copy{margin-left:8px;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 8px;font-size:12px}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:8px 14px;border-radius:6px;z-index:20}
 footer{color:var(--mute);font-size:12px;margin-top:24px;max-width:80ch}
@@ -637,6 +644,16 @@ function updateHealth(){
 var drawer=$('drawer');
 function openDrawer(html){drawer.innerHTML='<button class="x-close" data-close="1" aria-label="Close detail">Close</button>'+html;drawer.classList.add('open');drawer.setAttribute('aria-hidden','false');drawer.scrollTop=0}
 function closeDrawer(){drawer.classList.remove('open');drawer.setAttribute('aria-hidden','true')}
+function mateRow(x){
+  var cc=cd(x),w=x.end&&x.end.charAt(0)==='W';
+  var d=x.ms!=null?fmtDate(x.end):w?'After Worlds '+x.end.slice(1):'No end date';
+  var sub=w?'':(x.ms!=null?cc.t:'');
+  return '<button class="row m'+(cc.c==='past'?' gone':'')+'" data-player="'+x.id+'"><span class="rl">'+esc(roleLabel(x))+'</span><span class="nm">'+esc(x.name)+'</span><span class="rt"><span class="mono d">'+esc(d)+'</span>'+(sub?'<span class="mono cd '+cc.c+'">'+esc(sub)+'</span>':'')+'</span></button>';
+}
+function mateList(list,pre){pre=pre||'';
+  var pl=list.filter(function(x){return x.player}),st=list.filter(function(x){return !x.player});
+  return (pl.length?'<h4>'+pre+'Players<small>'+pl.length+'</small></h4>'+pl.map(mateRow).join(''):'')+(st.length?'<h4>'+pre+'Coaches and staff<small>'+st.length+'</small></h4>'+st.map(mateRow).join(''):'');
+}
 function contactBlock(t){
   if(!HAS_CON)return '<dd class="dim">Not shown on the public version</dd>';
   if(!t.con)return '<dd class="dim">None listed</dd>';
@@ -652,7 +669,7 @@ function openPlayer(id){
    '<dt>Contract ends</dt><dd class="mono">'+esc(endText(r))+(r.ms!=null?' 23:59 UTC':'')+'</dd>'+
    '<dt>Time left</dt><dd class="mono cd '+c.c+'">'+esc(c.t)+'</dd>'+
    '<dt>Team contact</dt>'+contactBlock(t)+'</dl>'+
-   '<h4>Teammates on the sheet</h4>'+(mates.length?mates.map(function(x){var cc=cd(x);return '<button class="row" data-player="'+x.id+'"><span><span class="name">'+esc(x.name)+'</span> <span class="dim">'+esc(roleLabel(x))+'</span></span><span class="mono">'+esc(endText(x))+'</span><span class="mono cd '+cc.c+'">'+esc(cc.t)+'</span></button>'}).join(''):'<p class="dim">Nobody else listed.</p>')+
+   (mates.length?mateList(mates,'Teammates · '):'<h4>Teammates</h4><p class="dim">Nobody else listed.</p>')+
    (same.length?'<h4>Same name elsewhere</h4>'+same.map(function(x){return '<button class="row" data-player="'+x.id+'"><span><span class="name">'+esc(x.name)+'</span> <span class="dim">'+esc(x.t.name)+'</span></span><span class="mono">'+esc(roleLabel(x))+'</span><span class="mono">'+x.t.reg+'</span></button>'}).join(''):'')
   );
 }
@@ -664,7 +681,7 @@ function openTeam(ti){
    '<div class="head">'+logo(t,'big')+'<div><h2>'+esc(t.name)+'</h2><p class="dim" style="margin:4px 0 0">'+esc(t.lg)+' · '+t.reg+(t.code?' · '+esc(t.code):'')+'</p></div></div>'+
    '<dl class="kv"><dt>Team contact</dt>'+contactBlock(t)+'<dt>Listings</dt><dd>'+rows.length+'</dd></dl>'+
    (fs.length?'<h4>Data health</h4>'+fs.map(function(f){return '<p style="margin:0 0 8px"><span class="pill" style="color:'+(f.sev==='high'?'var(--crit)':f.sev==='med'?'var(--warn)':'var(--mute)')+'">'+SEVN[f.sev]+'</span> <b>'+esc(f.label)+'</b><br><span class="dim">'+esc(f.detail)+'</span></p>'}).join(''):'')+
-   '<h4>Roster as listed</h4>'+rows.map(function(x){var cc=cd(x);return '<button class="row" data-player="'+x.id+'"><span><span class="name">'+esc(x.name)+'</span> <span class="dim">'+esc(roleLabel(x))+'</span></span><span class="mono">'+esc(endText(x))+'</span><span class="mono cd '+cc.c+'">'+esc(cc.t)+'</span></button>'}).join('')
+   mateList(rows)
   );
 }
 var toastT;
