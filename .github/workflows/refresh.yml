@@ -12,10 +12,10 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
       - name: Pull Riot's sheet and rebuild data.js and history.js
         run: node scripts/refresh.js
       - name: Commit if anything changed
