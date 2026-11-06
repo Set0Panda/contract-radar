@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: '43 5 * * *'   # daily, 05:43 UTC
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Accept a large per-region change that the guard would otherwise block'
+        type: boolean
+        default: false
 permissions:
   contents: write
 concurrency:
@@ -17,6 +22,8 @@ jobs:
         with:
           node-version: 24
       - name: Pull Riot's sheet and rebuild data.js and history.js
+        env:
+          ALLOW_BIG_CHANGE: ${{ inputs.force && '1' || '0' }}
         run: node scripts/refresh.js
       - name: Commit if anything changed
         run: |

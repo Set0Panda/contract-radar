@@ -73,12 +73,34 @@ function buildFrom(csvs){
   return {teams,rows,updated};
 }
 function loadWin(file){const w={};new Function('window',fs.readFileSync(file,'utf8'))(w);return w}
+// Per-region validation against the previous snapshot. A region may change by up to BAND without comment. A bigger change is
+// only believable if the sheet's own "last updated" stamp moved (retrieval time says nothing about the source); even then a drop of
+// more than CAP_DROP (or growth over CAP_GROW) needs a human: re-run the workflow with "force" ticked (or pass --force) to accept it.
+const BAND=0.15,CAP_DROP=0.5,CAP_GROW=1.0;
+const FORCE=args.includes('--force')||process.env.ALLOW_BIG_CHANGE==='1';
+function regionCounts(teams,rows){const c={};rows.forEach(r=>{const t=teams[r[0]];if(t)c[t[0]]=(c[t[0]]||0)+1});return c}
 function checks(N,P){
-  const e=[];
+  const e=[],w=[],ov=[];
   const regs=new Set(N.teams.map(t=>t[0]));for(const r of Object.keys(GIDS))if(!regs.has(r))e.push('region missing: '+r);
-  if(P){const prev=P.GCD_ROWS.length;if(N.rows.length<prev*0.85||N.rows.length>prev*1.15)e.push(`row count ${N.rows.length} vs previous ${prev} (outside 15%)`)}
+  const now=regionCounts(N.teams,N.rows);
+  for(const g of Object.keys(GIDS))if(!now[g])e.push(g+': no rows parsed');
+  if(P){
+    const prev=regionCounts(P.GCD_TEAMS,P.GCD_ROWS),ps=(P.GCD_META&&P.GCD_META.updated)||{};
+    for(const g of Object.keys(GIDS)){
+      const a=prev[g]||0,b=now[g]||0;if(!a||!b)continue;
+      const ch=(b-a)/a,pct=Math.round(ch*100)+'%',sheetNew=N.updated[g],sheetOld=ps[g];
+      if(sheetOld&&sheetNew<sheetOld){e.push(`${g}: the sheet's last-updated stamp went backwards (${sheetOld} -> ${sheetNew})`);continue}
+      if(Math.abs(ch)<=BAND)continue;
+      const moved=!sheetOld||sheetNew>sheetOld;
+      let msg=null;
+      if(!moved)msg=`${g}: ${a} -> ${b} rows (${pct}) but the sheet's own last-updated stamp did not move (${sheetNew}). Looks like a partial or malformed fetch`;
+      else if(ch<-CAP_DROP||ch>CAP_GROW)msg=`${g}: ${a} -> ${b} rows (${pct}) is beyond what is accepted automatically, even though the sheet stamp moved (${sheetOld} -> ${sheetNew}). Needs a human look`;
+      if(msg){if(FORCE)w.push('FORCED, accepted anyway: '+msg);else ov.push(msg)}
+      else w.push(`${g}: ${a} -> ${b} rows (${pct}); accepted because the sheet stamp moved (${sheetOld} -> ${sheetNew})`);
+    }
+  }
   N.rows.forEach(r=>{if(!N.teams[r[0]])e.push('row references missing team')});
-  return e}
+  return {errors:e.concat(ov),overridable:ov.length>0,warnings:w}}
 function writeData(N,today,dest){
   const head=`// Snapshot of Riot's League-Recognized Contract Database (GCD), pulled ${today}.\n// Legal names and team contact emails are intentionally omitted. role: TOP|JUNGLE|MID|BOT|SUPPORT|SUB|COACH|STAFF|"" ; end: ISO date | "W<year>" (day after Worlds) | ""\n// res: R = resident, N = non-resident, "" = not listed`;
   const body=head+'\nwindow.GCD_META = '+JSON.stringify({asOf:today,updated:N.updated})+';\nwindow.GCD_TEAMS = '+JSON.stringify(N.teams)+';\nwindow.GCD_ROWS = '+JSON.stringify(N.rows)+';\n';
@@ -104,8 +126,9 @@ function diff(P,N,H,today){
   let P=null,H={since:today,events:[]};
   if(fs.existsSync(dataFile)){try{P=loadWin(dataFile)}catch(e){}}
   if(fs.existsSync(histFile)){try{H=loadWin(histFile).GCD_HISTORY||H}catch(e){}}
-  const errs=checks(N,P);
-  if(errs.length){console.error('SANITY CHECK FAILED, nothing written:\n - '+errs.join('\n - '));process.exit(1)}
+  const chk=checks(N,P);
+  chk.warnings.forEach(m=>console.warn('warning: '+m));
+  if(chk.errors.length){console.error('SANITY CHECK FAILED, nothing written. Yesterday\'s data stays live.\n - '+chk.errors.join('\n - ')+(chk.overridable?'\nIf the change is real, re-run the workflow with "force" ticked (or run with --force).':''));process.exit(1)}
   if(P){const d=diff(P,{GCD_ROWS:N.rows,GCD_TEAMS:N.teams},H,today);H=d.H;console.log('changes',JSON.stringify(d.stats))}
   writeData(N,today,dataFile);
   fs.writeFileSync(histFile,'window.GCD_HISTORY='+JSON.stringify({since:H.since,events:H.events})+';\n');
