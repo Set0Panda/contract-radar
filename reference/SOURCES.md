@@ -5,7 +5,9 @@ AME gid 0, CN 594163931, EMEA 148326031, KR 905624073, LCP 1177719586. Pulled by
 
 **Team logos** - Leaguepedia (lol.fandom.com), `Special:FilePath/<Team>logo_std.png`, re-encoded to 64px webp. Raw pulls are in `reference/leaguepedia-logos-*.json`. Nine logos that Leaguepedia did not have were supplied by hand and are kept as originals in `assets/source-uploads/`. All logos are trademarks of their owners.
 
-**Region logos** - Leaguepedia: LoL_Championship_Series (AME), LPL (CN), LoL_EMEA_Championship (EMEA), LCK (KR), League_of_Legends_Championship_Pacific (LCP).
+**Region logos (large, in the header cards)** - league logo SVGs from Wikipedia (File:League championship series logo 2021.svg, League of legends pro league logo.svg, League of Legends EMEA Championship.svg, League of Legends Champions Korea logo.svg, League of Legends Championship Pacific logo.svg), rasterised to 480px-wide webp in `assets/regions-hi/`. The Americas logo is the 2021 LCS mark, which is the one Wikipedia currently carries. All are trademarks of their owners.
+
+**Region logos (small icons, in the table and chart legend)** - Leaguepedia: LoL_Championship_Series (AME), LPL (CN), LoL_EMEA_Championship (EMEA), LCK (KR), League_of_Legends_Championship_Pacific (LCP).
 
 **KR roles** - Riot's KR tab has no role column. `roles-kr.js` maps `team|player` to a role using the Leaguepedia team pages for the ten LCK teams (T1, Hanwha Life Esports, Dplus KIA, KT Rolster, HANJIN BRION, Gen.G, DN SOOPers, Kiwoom DRX, Nongshim RedForce, BNK FearX). The app marks these as "role from Leaguepedia, not Riot".
 
