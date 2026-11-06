@@ -20,3 +20,6 @@ No build step: open `index.html`. `data.js` and `history.js` are rewritten every
 
 ## Host it
 GitHub Pages: Settings -> Pages -> deploy from branch `main`, folder `/ (root)`.
+
+
+Still a work in progress. Any feedback would be appreciated
