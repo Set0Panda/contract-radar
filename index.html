@@ -1028,6 +1028,7 @@ function setView(v,noHash){
   if(v!=='top'&&v!=='foot'&&VIEWS.indexOf(v)<0)v='top';
   S.view=v;closeDrawer();
   if(v==='health'){var hd=$('hdet');if(hd)hd.open=true}
+  if(v==='top'){var rm=matchMedia('(prefers-reduced-motion:reduce)').matches;try{window.scrollTo({top:0,behavior:rm?'auto':'smooth'})}catch(e){window.scrollTo(0,0)}if(!noHash){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}return}
   var el=$(v);if(el){try{el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'})}catch(e){el.scrollIntoView()}}
   if(!noHash){try{history.replaceState(null,'','#'+v)}catch(e){}}
 }
