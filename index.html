@@ -117,11 +117,11 @@ h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.04e
 .panel h2{font-family:var(--display);font-size:20px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 2px;font-weight:600}
 .panel p.hint{margin:0 0 10px;color:var(--mute);font-size:12.5px}
 .chart{display:flex;gap:6px;align-items:flex-end;overflow-x:auto;padding:18px 2px 4px}
-.bar{flex:0 0 40px;display:flex;flex-direction:column;align-items:center;background:none;border:1px solid transparent;border-radius:4px;padding:2px 0 4px}
+.bar{flex:1 0 40px;max-width:92px;display:flex;flex-direction:column;align-items:center;background:none;border:1px solid transparent;border-radius:4px;padding:2px 0 4px}
 .bar:hover{background:var(--panel2)}
 .bar[aria-pressed="true"]{border-color:var(--accent);background:var(--panel2)}
 .bar .n{font-family:var(--mono);font-size:11px;color:var(--mute);height:16px}
-.stack{height:150px;width:22px;display:flex;flex-direction:column-reverse;justify-content:flex-start}
+.stack{height:190px;width:58%;max-width:44px;display:flex;flex-direction:column-reverse;justify-content:flex-start}
 .stack i{display:block;width:100%}
 .bar .x{font-size:10.5px;color:var(--mute);margin-top:4px;text-align:center;line-height:1.15}
 .chwrap{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:18px;align-items:start}
@@ -566,7 +566,7 @@ function updateRadar(){
   var max=0;keys.forEach(function(k){if(map[k].n>max)max=map[k].n});
   $('chart').innerHTML=keys.length?keys.map(function(k){
     var m=map[k];
-    var segs=REGS.filter(function(g){return m.reg[g]}).map(function(g){return '<i style="background:'+RC[g]+';height:'+Math.max(2,Math.round(m.reg[g]/max*150))+'px" title="'+g+': '+m.reg[g]+'"></i>'}).join('');
+    var segs=REGS.filter(function(g){return m.reg[g]}).map(function(g){return '<i style="background:'+RC[g]+';height:'+Math.max(2,Math.round(m.reg[g]/max*190))+'px" title="'+g+': '+m.reg[g]+'"></i>'}).join('');
     return '<button class="bar" data-bucket="'+k+'" aria-pressed="'+(S.bucket===k)+'" aria-label="'+bucketLabel(k)+': '+m.n+' players"><span class="n">'+m.n+'</span><span class="stack">'+segs+'</span><span class="x">'+esc(bucketLabel(k))+'</span></button>';
   }).join(''):'<div class="empty">No dated contracts in this view.</div>';
   $('legend').innerHTML=S.bucket?'<span><button class="copy" data-clear="1">Clear date filter</button></span>':'';
