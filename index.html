@@ -116,17 +116,19 @@ h1{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.04e
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:14px}
 .panel h2{font-family:var(--display);font-size:20px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 2px;font-weight:600}
 .panel p.hint{margin:0 0 10px;color:var(--mute);font-size:12.5px}
-.chart{display:flex;gap:6px;align-items:flex-end;overflow-x:auto;padding:18px 2px 4px}
+.chart{display:flex;gap:6px;align-items:stretch;overflow-x:auto;padding:6px 2px 4px;flex:1;min-height:300px}
 .bar{flex:1 0 40px;max-width:92px;display:flex;flex-direction:column;align-items:center;background:none;border:1px solid transparent;border-radius:4px;padding:2px 0 4px}
 .bar:hover{background:var(--panel2)}
 .bar[aria-pressed="true"]{border-color:var(--accent);background:var(--panel2)}
 .bar .n{font-family:var(--mono);font-size:11px;color:var(--mute);height:16px}
-.stack{height:190px;width:58%;max-width:44px;display:flex;flex-direction:column-reverse;justify-content:flex-start}
+.stack{flex:1;min-height:0;width:58%;max-width:48px;display:flex;flex-direction:column-reverse;justify-content:flex-start}
 .stack i{display:block;width:100%}
 .bar .x{font-size:10.5px;color:var(--mute);margin-top:4px;text-align:center;line-height:1.15}
-.chwrap{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:18px;align-items:start}
-.chmain{min-width:0}
+.chwrap{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:18px;align-items:stretch}
+.chmain{min-width:0;display:flex;flex-direction:column}
 .chcards{display:grid;gap:8px;padding-top:6px}
+.mcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:12px}
+.fc.off{opacity:.5;filter:grayscale(.7)}
 .fc{padding:8px 10px;gap:10px}
 .fc .lgbox{width:62px;height:34px}
 .fc .meta b{font-size:24px}
@@ -566,7 +568,7 @@ function updateRadar(){
   var max=0;keys.forEach(function(k){if(map[k].n>max)max=map[k].n});
   $('chart').innerHTML=keys.length?keys.map(function(k){
     var m=map[k];
-    var segs=REGS.filter(function(g){return m.reg[g]}).map(function(g){return '<i style="background:'+RC[g]+';height:'+Math.max(2,Math.round(m.reg[g]/max*190))+'px" title="'+g+': '+m.reg[g]+'"></i>'}).join('');
+    var segs=REGS.filter(function(g){return m.reg[g]}).map(function(g){return '<i style="background:'+RC[g]+';height:'+(m.reg[g]/max*100).toFixed(2)+'%;min-height:2px" title="'+g+': '+m.reg[g]+'"></i>'}).join('');
     return '<button class="bar" data-bucket="'+k+'" aria-pressed="'+(S.bucket===k)+'" aria-label="'+bucketLabel(k)+': '+m.n+' players"><span class="n">'+m.n+'</span><span class="stack">'+segs+'</span><span class="x">'+esc(bucketLabel(k))+'</span></button>';
   }).join(''):'<div class="empty">No dated contracts in this view.</div>';
   $('legend').innerHTML=S.bucket?'<span><button class="copy" data-clear="1">Clear date filter</button></span>':'';
@@ -610,15 +612,13 @@ function mountMarket(){
    '<div class="filters" style="margin-bottom:0">'+
     '<label>Window<select id="m-cut">'+CUTS.map(function(c){return '<option value="'+c[0]+'"'+(m.cut===c[0]?' selected':'')+'>'+c[1]+'</option>'}).join('')+'</select></label>'+
     '<label>League<select id="m-league"></select></label>'+
-    REGS.map(function(g){return '<label class="check"><input type="checkbox" data-mreg="'+g+'"'+(m.regs[g]?' checked':'')+'>'+rlogo(g)+'</label>'}).join('')+
     '<label class="check"><input type="checkbox" id="m-ended"'+(m.ended?' checked':'')+'> Include end dates already passed</label>'+
-   '</div></section>'+
+   '</div><div class="mcards" id="mcards"></div></section>'+
    '<section class="panel" id="m-sum"></section><div class="board" id="board"></div>';
   fillMLeague();
   $('m-cut').onchange=function(e){m.cut=e.target.value;m.expand={};updateMarket()};
   $('m-league').onchange=function(e){m.league=e.target.value;m.expand={};updateMarket()};
   $('m-ended').onchange=function(e){m.ended=e.target.checked;updateMarket()};
-  Array.prototype.forEach.call(document.querySelectorAll('[data-mreg]'),function(el){el.onchange=function(){m.regs[el.getAttribute('data-mreg')]=el.checked?1:0;fillMLeague();m.expand={};updateMarket()}});
   updateMarket();
 }
 function fillMLeague(){
@@ -630,11 +630,19 @@ function fillMLeague(){
 }
 function updateMarket(){
   var m=S.m,rows=marketRows();
+  // region cards: counts ignore which regions are switched on, so a switched-off region still shows what it would add
+  var saved=m.regs;m.regs={AME:1,CN:1,EMEA:1,KR:1,LCP:1};var allRows=marketRows();m.regs=saved;
+  var byAll={};allRows.forEach(function(r){byAll[r.t.reg]=(byAll[r.t.reg]||0)+1});
+  $('mcards').innerHTML=REGS.map(function(g){
+    var on=!!m.regs[g],u=META.updated[g],a=u?Math.floor((NOW-Date.parse(u+'T00:00:00Z'))/MS):null;
+    return '<button type="button" class="fr fc'+(on?' on':' off')+(a!=null&&a>30?' warn':'')+'" data-mreg="'+g+'" aria-pressed="'+on+'" style="--c:'+RC[g]+'" title="'+(on?'Click to leave '+g+' out':'Click to include '+g)+'"><span class="lgbox">'+((RLH[g]||RL[g])?'<img class="'+(g==='EMEA'||g==='KR'?'mono':'')+'" alt="'+g+' league logo" src="data:image/webp;base64,'+(RLH[g]||RL[g])+'">':'')+'</span><span class="meta"><b>'+(byAll[g]||0)+'</b><span class="ago">'+g+' · '+(on?'included':'left out')+'</span>'+(a!=null?'<span class="tag">sheet '+(a<1?'today':a+'d old')+'</span>':'')+'</span></button>';
+  }).join('');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-mreg]'),function(el){el.onclick=function(){var g=el.getAttribute('data-mreg');m.regs[g]=m.regs[g]?0:1;m.league='ALL';fillMLeague();m.expand={};updateMarket()}});
   var byReg={};rows.forEach(function(r){byReg[r.t.reg]=(byReg[r.t.reg]||0)+1});
   // most exposed rosters
   var tm={};rows.forEach(function(r){tm[r.ti]=(tm[r.ti]||0)+1});
   var ex=Object.keys(tm).map(function(k){var ps=byTeam[k].filter(function(r){return r.player});return {ti:+k,n:tm[k],size:ps.length}}).filter(function(x){return x.size>=4&&x.n/x.size>=.8}).sort(function(a,b){return b.n/b.size-a.n/a.size||b.n-a.n}).slice(0,16);
-  $('m-sum').innerHTML='<h2>'+rows.length+' players in the window</h2><p class="hint" style="margin:0">'+REGS.filter(function(g){return byReg[g]}).map(function(g){return '<span class="chip">'+rlogo(g)+' '+byReg[g]+'</span>'}).join(' ')+'</p>'+
+  $('m-sum').innerHTML='<h2>'+rows.length+' players in the window</h2>'+
     (ex.length?'<p class="hint" style="margin:10px 0 0">Rosters with at least 80% of listed players in the window:</p><div class="exposed">'+ex.map(function(x){var t=T[x.ti];return '<button data-team="'+x.ti+'" class="tcell">'+logo(t,'sm')+esc(t.name)+' <b>'+x.n+'/'+x.size+'</b></button>'}).join('')+'</div>':'');
   $('board').innerHTML=COLS.map(function(c){
     var list=rows.filter(function(r){return r.role===c[0]});
