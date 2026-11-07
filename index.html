@@ -250,6 +250,16 @@ body{background:
 .chip:hover{transform:translateY(-1px)}
 .sec{padding-top:56px}
 .sechead{border-top:0;padding-top:0;position:relative;padding-left:16px;margin-bottom:20px}
+.hdet>summary{list-style:none;cursor:pointer}
+.hdet>summary::-webkit-details-marker{display:none}
+.hdet>summary .st{display:inline}
+.hdet>summary::after{content:"+";position:absolute;right:0;top:2px;font-family:var(--mono);font-size:22px;color:var(--mute);border:1px solid var(--line);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+.hdet[open]>summary::after{content:"\2212"}
+.hdet>summary:hover::after{border-color:var(--accent);color:var(--accent)}
+.hdet>summary .ss{display:block}
+.hdet[open]>summary{margin-bottom:20px}
+.hsum{display:inline-flex;gap:6px;margin-left:14px;vertical-align:middle}
+.hsum .chip b{font-weight:700}
 .sechead::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:4px;border-radius:4px;background:linear-gradient(180deg,var(--accent),rgba(120,98,255,.8))}
 .ss{font-size:14.5px}
 .kpis{gap:12px;margin-bottom:16px}
@@ -320,7 +330,7 @@ footer{color:#a9b7c8;font-size:13px}
   <section class="sec" id="outlook" hidden><div class="sechead"><h2 class="st">Roster outlook</h2><p class="ss">Who is signed past the next aligned end date, and which starting slots have nobody listed beyond it. Built only from the contract sheet.</p></div><div id="sec-outlook"></div></section>
   <section class="sec" id="market"><div class="sechead"><h2 class="st">Market board</h2><p class="ss">Who is exposed to free agency in a chosen window, split by role.</p></div><div id="sec-market"></div></section>
   <section class="sec" id="changes"><div class="sechead"><h2 class="st">What changed</h2><p class="ss">Roster and contract changes between daily snapshots. A new listing, a removed one, a moved end date, or a role change.</p></div><div id="sec-changes"></div></section>
-  <section class="sec" id="health"><div class="sechead"><h2 class="st">Data health</h2><p class="ss">Problems in the source sheets, so you know what not to trust.</p></div><div id="sec-health"></div></section>
+  <section class="sec" id="health"><details id="hdet" class="hdet"><summary class="sechead"><span class="st">Data health</span><span class="hsum" id="hsum"></span><span class="ss">Problems in the source sheets, so you know what not to trust. Click to open.</span></summary><div id="sec-health"></div></details></section>
   <footer id="foot"></footer>
 </div>
 <aside id="drawer" aria-label="Detail" aria-hidden="true"></aside>
@@ -741,6 +751,7 @@ function mountHealth(){
   var cnt={high:0,med:0,low:0};FINDINGS.forEach(function(f){cnt[f.sev]++});
   var keys={};FINDINGS.forEach(function(f){keys[f.key]=f.label});
   var h=S.h;
+  $('hsum').innerHTML=['high','med','low'].map(function(k){return '<span class="chip'+(k==='high'?' crit':k==='med'?' warn':'')+'"><b>'+cnt[k]+'</b> '+SEVN[k].toLowerCase()+'</span>'}).join('');
   $('sec-health').innerHTML=
    '<div class="sev">'+['high','med','low'].map(function(s){return '<button class="sevbtn sev-'+s+'" data-sev="'+s+'" aria-pressed="'+(h.sev===s)+'"><b>'+cnt[s]+'</b><span>'+SEVN[s]+' severity</span></button>'}).join('')+'</div>'+
    (CLEANED.length?'<p class="hint" style="margin:0 0 10px;color:var(--ok)"><b>Cleaned automatically ('+CLEANED.length+' row'+(CLEANED.length===1?'':'s')+' dropped before anything on this page is counted):</b> '+CLEANED.map(function(c){var t=T[canon[c[0][0]]];return esc(c[0][1])+' ('+esc(t.name)+', '+esc(c[0][2]||'N/A')+') – '+c[1]}).join('; ')+'. The source sheet itself still has them.</p>':'')+
@@ -1011,6 +1022,7 @@ var VIEWS=['radar','follows','outlook','market','changes','health'];
 function setView(v,noHash){
   if(v!=='top'&&v!=='foot'&&VIEWS.indexOf(v)<0)v='top';
   S.view=v;closeDrawer();
+  if(v==='health'){var hd=$('hdet');if(hd)hd.open=true}
   var el=$(v);if(el){try{el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'})}catch(e){el.scrollIntoView()}}
   if(!noHash){try{history.replaceState(null,'','#'+v)}catch(e){}}
 }

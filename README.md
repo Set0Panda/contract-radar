@@ -11,7 +11,7 @@ Who is out of contract, when, and where the market is thin. A static site built 
 - **My follows** - follow teams, or a role in a region, and see only their expiries and changes. Saved in your browser; "Copy link" gives a URL that carries your list. Nothing is sent to a server.
 - **Market board** - who is exposed in a chosen window, by role. Region cards switch regions in or out (several at once) and show each region's count and sheet age.
 - **What changed** - additions, removals, moved end dates and role changes between daily snapshots. Tracking started 6 Nov 2026, so it fills in as the sheet changes.
-- **Data health** - problems in the source sheets, so you know what not to trust: stale sheets, duplicates, missing roles, ended dates still listed, and end dates that fall off Riot's aligned calendar.
+- **Data health** (collapsed by default, with severity counts in the header) - problems in the source sheets, so you know what not to trust: stale sheets, duplicates, missing roles, ended dates still listed, and end dates that fall off Riot's aligned calendar.
 
 Unofficial fan project, not affiliated with or endorsed by Riot Games. Powered by claude.ai (Claude, an AI assistant by Anthropic): the code and data processing were written by AI, so verify anything important against Riot's sheet. Team and league logos are trademarks of their owners.
 
