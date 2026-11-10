@@ -334,7 +334,7 @@ footer{color:#a9b7c8;font-size:13px}
   <section class="sec" id="follows"><div class="sechead"><h2 class="st">My follows</h2><p class="ss">Follow teams or roles to see only their expiries and changes. Saved in this browser; copy the link to share your list.</p></div><div id="sec-follows"></div></section>
   <section class="sec" id="outlook" hidden><div class="sechead"><h2 class="st">Roster outlook</h2><p class="ss">Who is signed past the next aligned end date, and which starting slots have nobody listed beyond it. Built only from the contract sheet.</p></div><div id="sec-outlook"></div></section>
   <section class="sec" id="market"><div class="sechead"><h2 class="st">Market board</h2><p class="ss">Who is exposed to free agency in a chosen window, split by role.</p></div><div id="sec-market"></div></section>
-  <section class="sec" id="changes"><div class="sechead"><h2 class="st">What changed</h2><p class="ss">Roster and contract changes between daily snapshots. A new listing, a removed one, a moved end date, or a role change.</p></div><div id="sec-changes"></div></section>
+  <section class="sec" id="changes"><div class="sechead"><h2 class="st">What changed</h2><p class="ss">Roster and contract changes between daily snapshots. A new listing, a removed one, a moved end date, or a role change.</p></div><div id="sec-reported"></div><div id="sec-changes"></div></section>
   <section class="sec" id="health"><details id="hdet" class="hdet"><summary class="sechead"><span class="st">Data health</span><span class="hsum" id="hsum"></span><span class="ss">Problems in the source sheets, so you know what not to trust. Click to open.</span></summary><div id="sec-health"></div></details></section>
   <footer id="foot"></footer>
 </div>
@@ -345,6 +345,7 @@ footer{color:#a9b7c8;font-size:13px}
 <script src="roles-kr.js"></script>
 <script src="regions.js"></script>
 <script src="history.js"></script>
+<script src="reported.js"></script>
 <script src="site-config.js"></script>
 <script>
 /* optional privacy-friendly counter (GoatCounter): set goatcounter in site-config.js */
@@ -838,6 +839,17 @@ function openTeam(ti){
 var toastT;
 function toast(msg){var el=$('toast');el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){el.hidden=true},1800)}
 
+// ---------- REPORTED MOVES (unconfirmed, from reports; not Riot data) ----------
+function mountReported(){
+  var el=$('sec-reported');if(!el)return;
+  var list=(window.GCD_REPORTED||[]).filter(function(m){
+    return !window.GCD_ROWS.some(function(r){var t=window.GCD_TEAMS[r[0]];return t&&t[2]===m.to&&r[1].toLowerCase()===m.name.toLowerCase()});
+  });
+  if(!list.length){el.innerHTML='';return}
+  el.innerHTML='<div class="panel"><h2>Reported, not yet on Riot\'s sheet</h2><p class="hint">Moves journalists have reported. These are not contract data: treat them as unconfirmed until the sheet or the team says so. Each row disappears once the sheet lists the player on the new team.</p><div class="tablewrap">'+
+   list.map(function(m){
+     return '<div class="chrow"><span class="pill ck-role">'+(m.status==='announced'?'Announced':'Reported')+'</span><span class="name">'+esc(m.name)+' <span class="dim">'+esc(m.role)+'</span></span><span>'+esc(m.from)+' → '+esc(m.to)+'</span><span class="dim">'+esc(m.note||'')+' <a href="'+esc(m.url)+'" rel="noopener">'+esc(m.by)+', '+esc(fmtDate(m.date))+'</a></span></div>'}).join('')+'</div></div>';
+}
 // ---------- CHANGES ----------
 var HIST=window.GCD_HISTORY||{since:null,events:[]};
 var CH={days:'14',kind:'ALL'};
@@ -1063,7 +1075,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDrawer(
 window.addEventListener('hashchange',function(){var v=location.hash.replace('#','');if(v)setView(v,true)});
 
 renderHeader();
-mountRadar();mountMarket();mountChanges();mountHealth();mountOutlook();loadFollows();syncFollowUI();
+mountRadar();mountMarket();mountChanges();mountReported();mountHealth();mountOutlook();loadFollows();syncFollowUI();
 var start=(location.hash||'').replace('#','');
 if(start&&start!=='top')setTimeout(function(){setView(start,true)},60);
 spy();
